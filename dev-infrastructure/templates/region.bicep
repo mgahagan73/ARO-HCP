@@ -42,8 +42,8 @@ param svcAcrResourceId string
 @description('MSI that will be used during pipeline runs')
 param aroDevopsMsiId string
 
-// Log Analytics Workspace ID will be passed from global pipeline if enabled in config
-param logAnalyticsWorkspaceId string = ''
+@description('Enable Log Analytics')
+param enableLogAnalytics bool
 
 import * as res from '../modules/resource.bicep'
 
@@ -158,6 +158,21 @@ module maestroInfra '../modules/maestro/maestro-infra.bicep' = {
     maxClientSessionsPerAuthName: maestroEventGridMaxClientSessionsPerAuthName
     publicNetworkAccess: maestroEventGridPrivate ? 'Disabled' : 'Enabled'
     certificateIssuer: maestroCertificateIssuer
-    logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
+    logAnalyticsWorkspaceId: enableLogAnalytics ? logAnalyticsWorkspace.id : ''
+  }
+}
+
+//
+//   L O G   A N A L Y T I C S
+//
+
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = if (enableLogAnalytics) {
+  name: 'log-analytics-workspace'
+  location: resourceGroup().location
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+    retentionInDays: 90
   }
 }

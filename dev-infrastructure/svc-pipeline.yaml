@@ -44,10 +44,10 @@ resourceGroups:
     variables:
     - name: logAnalyticsWorkspaceId
       input:
-        step: global-output
+        step: region-output
         name: logAnalyticsWorkspaceId
     dependsOn:
-    - global-output
+    - region-output
   # Configure certificate issuers for the SVC KV
   - name: svc-oncert-private-kv-issuer
     action: SetCertificateIssuer
@@ -90,7 +90,7 @@ resourceGroups:
         name: azureMonitoringWorkspaceId
     - name: logAnalyticsWorkspaceId
       input:
-        step: global-output
+        step: region-output
         name: logAnalyticsWorkspaceId
     dependsOn:
     - svc-oncert-private-kv-issuer

@@ -40,7 +40,7 @@ param kvCertOfficerPrincipalId string
 @description('MSI that will be used during pipeline runs')
 param aroDevopsMsiId string
 
-// Log Analytics Workspace ID will be passed from global pipeline if enabled in config
+// Log Analytics Workspace ID will be passed from region pipeline if enabled in config
 param logAnalyticsWorkspaceId string = ''
 
 resource resourcegroupTags 'Microsoft.Resources/tags@2024-03-01' = {

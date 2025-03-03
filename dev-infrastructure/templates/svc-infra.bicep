@@ -22,7 +22,7 @@ param aroDevopsMsiId string
 @description('Set to true to prevent resources from being pruned after 48 hours')
 param persist bool = false
 
-// Log Analytics Workspace ID will be passed from global pipeline if enabled in config
+// Log Analytics Workspace ID will be passed from region pipeline if enabled in config
 param logAnalyticsWorkspaceId string = ''
 
 // Tags the resource group

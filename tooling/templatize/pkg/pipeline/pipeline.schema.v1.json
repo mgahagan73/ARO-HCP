@@ -18,7 +18,11 @@
         },
         "variableRef": {
             "type": "object",
+            "additionalProperties": false,
             "properties": {
+                "name": {
+                    "type": "string"
+                },
                 "input": {
                     "type": "object",
                     "additionalProperties": false,
@@ -62,6 +66,7 @@
         },
         "variable": {
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "name": {
                     "type": "string"
@@ -143,7 +148,7 @@
                                 },
                                 "action": {
                                     "type": "string",
-                                    "enum": ["ARM", "Shell", "DelegateChildZone", "SetCertificateIssuer", "CreateCertificate", "ResourceProviderRegistration", "LogsAccount"]
+                                    "enum": ["ARM", "Shell", "DelegateChildZone", "SetCertificateIssuer", "CreateCertificate", "ResourceProviderRegistration", "RPLogsAccount", "ClusterLogsAccount"]
                                 },
                                 "template": {
                                     "type": "string"
@@ -208,6 +213,21 @@
                                 },
                                 "certdescription": {
                                     "$ref": "#/definitions/variableRef"
+                                },
+                                "configVersion": {
+                                    "$ref": "#/definitions/variableRef"
+                                },
+                                "events": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "akskubesystem": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "akskubesystem"
+                                    ]
                                 },
                                 "outputOnly": {
                                     "type": "boolean"
@@ -429,7 +449,7 @@
                                         },
                                         "action": {
                                             "type": "string",
-                                            "enum": ["LogsAccount"]
+                                            "enum": ["RPLogsAccount", "ClusterLogsAccount"]
                                         },
                                         "subscriptionId": {
                                             "$ref": "#/definitions/variableRef"
@@ -443,6 +463,21 @@
                                         "certdescription": {
                                             "$ref": "#/definitions/variableRef"
                                         },
+                                        "configVersion": {
+                                            "$ref": "#/definitions/variableRef"
+                                        },
+                                        "events": {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "akskubesystem": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "akskubesystem"
+                                            ]
+                                        },
                                         "dependsOn": {
                                             "type": "array",
                                             "items": {
@@ -454,7 +489,9 @@
                                         "subscriptionId",
                                         "namespace",
                                         "certsan",
-                                        "certdescription"
+                                        "certdescription",
+                                        "configVersion",
+                                        "events"
                                     ]
                                 }
                             ],

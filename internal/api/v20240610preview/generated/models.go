@@ -18,18 +18,6 @@ type APIProfile struct {
 	URL *string
 }
 
-// ClaimProfile - External auth claim profile
-type ClaimProfile struct {
-	// REQUIRED; Claim name of the external profile
-	Claim *string
-
-	// REQUIRED; Prefix for the claim external profile
-	Prefix *string
-
-	// REQUIRED; Prefix policy
-	PrefixPolicy *string
-}
-
 type ComponentsQjfoe3SchemasManagedserviceidentityupdatePropertiesUserassignedidentitiesAdditionalproperties struct {
 	// READ-ONLY; The client ID of the assigned identity.
 	ClientID *string
@@ -86,60 +74,6 @@ type ErrorDetail struct {
 type ErrorResponse struct {
 	// The error object.
 	Error *ErrorDetail
-}
-
-// ExternalAuthClaimProfile - External auth claim profile
-type ExternalAuthClaimProfile struct {
-	// REQUIRED; The claim mappings
-	Mappings *TokenClaimMappingsProfile
-
-	// REQUIRED; The claim validation rules
-	ValidationRules []*TokenClaimValidationRuleProfile
-}
-
-// ExternalAuthClientComponentProfile - External auth component profile
-type ExternalAuthClientComponentProfile struct {
-	// REQUIRED; The namespace of the external auth client
-	AuthClientNamespace *string
-
-	// REQUIRED; The name of the external auth client
-	Name *string
-}
-
-// ExternalAuthClientProfile - External auth client profile
-type ExternalAuthClientProfile struct {
-	// REQUIRED; External auth client component
-	Component *ExternalAuthClientComponentProfile
-
-	// REQUIRED; external auth client scopes
-	ExtraScopes []*string
-
-	// REQUIRED; external auth client id
-	ID *string
-
-	// REQUIRED; external auth client secret
-	Secret *string
-}
-
-// ExternalAuthConfigProfile - External authentication configuration profile
-type ExternalAuthConfigProfile struct {
-	// READ-ONLY; This can only be set as a day-2 resource on a separate endpoint to provide a self-managed auth service
-	ExternalAuths []*ExternalAuthProfile
-
-	// This can be set during cluster creation only to ensure there is no openshift-oauth-apiserver in cluster
-	Enabled *bool
-}
-
-// ExternalAuthProfile - External authentication profile
-type ExternalAuthProfile struct {
-	// REQUIRED; External auth claim
-	Claim *ExternalAuthClaimProfile
-
-	// REQUIRED; External auth clients
-	Clients []*ExternalAuthClientProfile
-
-	// REQUIRED; Token Issuer profile
-	Issuer *TokenIssuerProfile
 }
 
 // HcpOpenShiftClusterCredentials - HCP cluster credentials
@@ -223,9 +157,6 @@ type HcpOpenShiftClusterPatchProperties struct {
 	// Disable user workload monitoring
 	DisableUserWorkloadMonitoring *bool
 
-	// Openshift cluster proxy configuration
-	Proxy *ProxyProfile
-
 	// READ-ONLY; The status of the last operation.
 	ProvisioningState *ProvisioningState
 }
@@ -235,18 +166,11 @@ type HcpOpenShiftClusterProperties struct {
 	// REQUIRED; Version of the control plane components
 	Version *VersionProfile
 
-	// READ-ONLY; URL for the OIDC provider to be used for authentication to authenticate against user Azure cloud account
-	IssuerURL *string
-
 	// Cluster DNS configuration
 	DNS *DNSProfile
 
 	// Disable user workload monitoring
 	DisableUserWorkloadMonitoring *bool
-
-	// Configuration to override the openshift-oauth-apiserver inside cluster This changes user login into the cluster to external
-// provider
-	ExternalAuth *ExternalAuthConfigProfile
 
 	// Cluster network configuration
 	Network *NetworkProfile
@@ -254,14 +178,14 @@ type HcpOpenShiftClusterProperties struct {
 	// Azure platform configuration
 	Platform *PlatformProfile
 
-	// Openshift cluster proxy configuration
-	Proxy *ProxyProfile
-
 	// READ-ONLY; Shows the cluster API server profile
 	API *APIProfile
 
 	// READ-ONLY; Shows the cluster web console information
 	Console *ConsoleProfile
+
+	// READ-ONLY; URL for the OIDC provider to be used for authentication to authenticate against user Azure cloud account
+	IssuerURL *string
 
 	// READ-ONLY; The status of the last operation.
 	ProvisioningState *ProvisioningState
@@ -567,21 +491,6 @@ type PlatformProfile struct {
 	OutboundType *OutboundType
 }
 
-// ProxyProfile - OpenShift cluster proxy configuration
-type ProxyProfile struct {
-	// http proxy config
-	HTTPProxy *string
-
-	// https proxy config
-	HTTPSProxy *string
-
-	// no proxy config
-	NoProxy *string
-
-	// The trusted CA for the proxy
-	TrustedCa *string
-}
-
 // ProxyResource - The resource model definition for a Azure Resource Manager proxy resource. It will not have tags and a
 // location
 type ProxyResource struct {
@@ -644,36 +553,6 @@ type Taint struct {
 
 	// The value of the taint The good example of the taint value is NoSchedule
 	Value *string
-}
-
-// TokenClaimMappingsProfile - External auth claim mappings profile
-type TokenClaimMappingsProfile struct {
-	// REQUIRED; The claim mappings groups
-	Groups *ClaimProfile
-
-	// REQUIRED; The claim mappings username
-	Username *ClaimProfile
-}
-
-// TokenClaimValidationRuleProfile - External auth claim validation rule
-type TokenClaimValidationRuleProfile struct {
-	// REQUIRED; Claim name for the validation profile
-	Claim *string
-
-	// REQUIRED; Required value
-	RequiredValue *string
-}
-
-// TokenIssuerProfile - Token issuer profile
-type TokenIssuerProfile struct {
-	// REQUIRED; The audience of the token issuer
-	Audiences []*string
-
-	// REQUIRED; The issuer of the token
-	Ca *string
-
-	// REQUIRED; The URL of the token issuer
-	URL *string
 }
 
 // TrackedResource - The resource model definition for an Azure Resource Manager tracked top level resource which has 'tags'
