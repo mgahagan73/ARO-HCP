@@ -18,6 +18,10 @@ test:
 	go list -f '{{.Dir}}/...' -m |RUN_TEMPLATIZE_E2E=true xargs go test -timeout 1200s -tags=$(GOTAGS) -cover
 .PHONY: test
 
+test-compile:
+	go list -f '{{.Dir}}/...' -m |xargs go test -c -o /dev/null
+.PHONY: test-compile
+
 mocks: install-tools
 	MOCKGEN=${MOCKGEN} go generate ./internal/mocks
 .PHONY: mocks
@@ -141,7 +145,7 @@ services_svc_pipelines = istio acrpull backend frontend cluster-service maestro.
 ifeq ($(DEPLOY_ENV), personal-dev)
 	services_mgmt_pipelines = hypershiftoperator maestro.agent acm
 else
-	services_mgmt_pipelines = mgmt-fixes hypershiftoperator maestro.agent acm
+	services_mgmt_pipelines = hypershiftoperator maestro.agent acm
 endif
 %.deploy_pipeline:
 	$(eval export dirname=$(subst .,/,$(basename $@)))

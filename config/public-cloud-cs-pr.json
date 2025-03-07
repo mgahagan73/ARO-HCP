@@ -107,13 +107,11 @@
   },
   "hypershift": {
     "additionalInstallArg": "--tech-preview-no-upgrade",
-    "namespace": "hypershift"
-  },
-  "hypershiftOperator": {
     "image": {
-      "digest": "sha256:c802cd5c71b279926ed3f02871d5a414d0b852dd276406046fc4e893404d468f",
+      "digest": "sha256:305f45bf036f84255d41c20517c70a9cb18af3dcdfa71a82a5716dde77c9e2c3",
       "repository": "acm-d/rhtap-hypershift-operator"
-    }
+    },
+    "namespace": "hypershift"
   },
   "imageSync": {
     "acrRG": "global",
@@ -234,6 +232,7 @@
       },
       "vnetAddressPrefix": "10.128.0.0/14"
     },
+    "applyKubeletFixes": true,
     "rg": "hcp-underlay-cspr-mgmt-1",
     "subscription": "ARO Hosted Control Planes (EA Subscription 1)"
   },
@@ -245,6 +244,19 @@
   "miMockCertName": "msiMockCert2",
   "miMockClientId": "e8723db7-9b9e-46a4-9f7d-64d75c3534f0",
   "miMockPrincipalId": "d6b62dfa-87f5-49b3-bbcb-4a687c4faa96",
+  "mise": {
+    "armInstance": "",
+    "azureAdClientId": "",
+    "azureAdInstance": "",
+    "deploy": false,
+    "image": {
+      "digest": "",
+      "registry": "",
+      "repository": ""
+    },
+    "validAppId0": "",
+    "validAppId1": ""
+  },
   "monitoring": {
     "grafanaAdminGroupPrincipalId": "6b6d3adf-8476-4727-9812-20ffdef2b85c",
     "grafanaName": "arohcp-dev",

@@ -66,6 +66,7 @@ defaults:
   mgmt:
     subscription: ARO Hosted Control Planes (EA Subscription 1)
     rg: hcp-underlay-{{ .ctx.regionShort }}-mgmt-{{ .ctx.stamp }}
+    applyKubeletFixes: true
     aks:
       name: "{{ .ctx.regionShort }}-mgmt-{{ .ctx.stamp }}"
       vnetAddressPrefix: "10.128.0.0/14"
@@ -88,6 +89,19 @@ defaults:
     cert:
       name: frontend-cert-{{ .ctx.regionShort }}
       issuer: Self
+
+  # Mise
+  mise:
+    deploy: false
+    azureAdInstance: ""
+    azureAdClientId: ""
+    armInstance: ""
+    validAppId0: ""
+    validAppId1: ""
+    image:
+      registry: ""
+      repository: ""
+      digest: ""
 
   # Maestro
   maestro:
@@ -244,10 +258,10 @@ clouds:
           kms:
             roleName: Azure Red Hat OpenShift KMS Plugin - Dev
       # Hypershift Operator
-      hypershiftOperator:
+      hypershift:
         image:
           repository: acm-d/rhtap-hypershift-operator
-          digest: sha256:c802cd5c71b279926ed3f02871d5a414d0b852dd276406046fc4e893404d468f
+          digest: sha256:305f45bf036f84255d41c20517c70a9cb18af3dcdfa71a82a5716dde77c9e2c3
       # Frontend
       frontend:
         image:
@@ -427,6 +441,9 @@ clouds:
             cosmosDB:
               private: false
               zoneRedundantMode: 'Disabled'
+          # MC
+          mgmt:
+            applyKubeletFixes: false
       personal-perfscale:
         defaults:
           dns:
