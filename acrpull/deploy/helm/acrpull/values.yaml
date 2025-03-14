@@ -1,5 +1,0 @@
-namespace: acrpull
-image: registry/image:tag
-nodeSelector: {}
-tolerations: []
-affinity: {}

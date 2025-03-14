@@ -2,9 +2,9 @@ $schema: "pipeline.schema.v1"
 serviceGroup: Microsoft.Azure.ARO.HCP.ClusterService
 rolloutName: Cluster Service Rollout
 resourceGroups:
-- name: {{ .svc.rg }}
-  subscription: {{ .svc.subscription }}
-  aksCluster: {{ .svc.aks.name }}
+- name: '{{ .svc.rg  }}'
+  subscription: '{{ .svc.subscription  }}'
+  aksCluster: '{{ .svc.aks.name  }}'
   steps:
   - name: deploy
     action: Shell
@@ -29,9 +29,9 @@ resourceGroups:
     - name: IMAGE_DIGEST
       configRef: clusterService.image.digest
     - name: ACR_NAME
-      configRef: svcAcrName
+      configRef: acr.svc.name
     - name: OCP_ACR_NAME
-      configRef: ocpAcrName
+      configRef: acr.ocp.name
     - name: AZURE_FIRST_PARTY_APPLICATION_CLIENT_ID
       configRef: firstPartyAppClientId
     - name: FPA_CERT_NAME
@@ -84,8 +84,6 @@ resourceGroups:
       configRef: clusterService.k8s.serviceAccountName
     - name: ENVIRONMENT
       configRef: clusterService.environment
-
-
     # this is maestro consumer registration stuff
     # this goes away when we have a real registration process
     - name: CONSUMER_NAME

@@ -41,13 +41,30 @@ fmt: $(GOIMPORTS)
 	$(GOIMPORTS) -w -local github.com/Azure/ARO-HCP $(shell go list -f '{{.Dir}}' -m | xargs)
 .PHONY: fmt
 
+yamlfmt: $(YAMLFMT)
+	# first, wrap all templated values in quotes, so they are correct YAML
+	./yamlfmt.wrap.sh
+	# run the formatter
+	$(YAMLFMT) -dstar '**/*.{yaml,yml}'
+	# "fix" any non-string fields we cast to strings for the formatting
+	./yamlfmt.unwrap.sh
+.PHONY: yamlfmt
+
 tidy: $(MODULES:/...=.tidy)
 
 %.tidy:
 	cd $(basename $@) && go mod tidy
 
-all-tidy: tidy
+all-tidy: tidy fmt yamlfmt
 	go work sync
+
+mega-lint:
+	docker run --rm \
+		-e FILTER_REGEX_EXCLUDE='hypershiftoperator/deploy/crds/|maestro/server/deploy/templates/allow-cluster-service.authorizationpolicy.yaml|acm/deploy/helm/multicluster-engine-config/charts/policy/charts' \
+		-e REPORT_OUTPUT_FOLDER=/tmp/report \
+		-v $${PWD}:/tmp/lint:Z \
+		oxsecurity/megalinter:v8 
+.PHONY: mega-lint
 
 #
 # Infra
@@ -105,6 +122,10 @@ infra.clean:
 	@cd dev-infrastructure && DEPLOY_ENV=$(DEPLOY_ENV) make clean
 .PHONY: infra.clean
 
+infra.observability:
+	cd observability && KUBECONFIG="$$(cd ../dev-infrastructure && make -s svc.aks.kubeconfigfile)" make
+.PHONY: infra.observability
+
 #
 # Services
 #
@@ -149,12 +170,7 @@ services_all = $(join services_svc,services_mgmt)
 # This sections is used to reference pipeline runs and should replace
 # the usage of `svc-deploy.sh` script in the future.
 services_svc_pipelines = istio acrpull backend frontend cluster-service maestro.server
-# Don't apply mgmt cluster fixes to personal clusters
-ifeq ($(DEPLOY_ENV), personal-dev)
-	services_mgmt_pipelines = hypershiftoperator maestro.agent acm
-else
-	services_mgmt_pipelines = hypershiftoperator maestro.agent acm
-endif
+services_mgmt_pipelines = hypershiftoperator maestro.agent acm
 %.deploy_pipeline:
 	$(eval export dirname=$(subst .,/,$(basename $@)))
 	./templatize.sh $(DEPLOY_ENV) -p ./$(dirname)/pipeline.yaml -P run -c public

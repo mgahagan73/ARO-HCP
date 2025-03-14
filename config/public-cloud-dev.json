@@ -1,7 +1,17 @@
 {
+  "acr": {
+    "ocp": {
+      "name": "arohcpocpdev",
+      "zoneRedundantMode": "Disabled"
+    },
+    "svc": {
+      "name": "arohcpsvcdev",
+      "zoneRedundantMode": "Disabled"
+    }
+  },
   "acrPull": {
     "image": {
-      "digest": "sha256:51dd1a7c217b554d7925e67008caf747c8bec17b641830160e08b6836a8aa589",
+      "digest": "sha256:c802a91b3b0fe4a3875a03904140a14eb54c8b94db1d510946c9c438d28689c0",
       "registry": "mcr.microsoft.com",
       "repository": "aks/msi-acrpull"
     }
@@ -114,7 +124,6 @@
     "namespace": "hypershift"
   },
   "imageSync": {
-    "acrRG": "global",
     "componentSync": {
       "enabled": true,
       "image": {
@@ -123,7 +132,7 @@
       },
       "pullSecretName": "component-sync-pull-secret",
       "repositories": "quay.io/redhat-user-workloads/maestro-rhtap-tenant/maestro/maestro,quay.io/acm-d/rhtap-hypershift-operator,quay.io/app-sre/uhc-clusters-service,quay.io/package-operator/package-operator-package,quay.io/package-operator/package-operator-manager",
-      "secrets": "quay.io:bearer-secret"
+      "secrets": "quay.io:quay-io-bearer"
     },
     "environmentName": "aro-hcp-image-sync",
     "keyVault": {
@@ -139,7 +148,8 @@
       },
       "pullSecretName": "pull-secret"
     },
-    "rg": "hcp-underlay-westus3-imagesync-dev"
+    "rg": "hcp-underlay-westus3-imagesync-dev",
+    "secretsToSyncDir": "dev/arohcp-imagesync-dev"
   },
   "kvCertOfficerPrincipalId": "c9b1819d-bb29-4ac2-9abe-39e4fe9b59eb",
   "logs": {
@@ -213,7 +223,7 @@
         "kvName": "arohcp-etcd-dev-1",
         "kvSoftDelete": false
       },
-      "kubernetesVersion": "1.31.2",
+      "kubernetesVersion": "1.31.5",
       "name": "dev-mgmt-1",
       "podSubnetPrefix": "10.128.64.0/18",
       "subnetPrefix": "10.128.8.0/21",
@@ -267,8 +277,6 @@
     "private": false,
     "softDelete": false
   },
-  "ocpAcrName": "arohcpocpdev",
-  "ocpAcrZoneRedundantMode": "Disabled",
   "oidcStorageAccountName": "arohcpoidcdev",
   "oidcZoneRedundantMode": "Auto",
   "pko": {
@@ -292,7 +300,7 @@
         "kvName": "arohcp-etcd-dev",
         "kvSoftDelete": false
       },
-      "kubernetesVersion": "1.31.2",
+      "kubernetesVersion": "1.31.5",
       "name": "dev-svc",
       "podSubnetPrefix": "10.128.64.0/18",
       "subnetPrefix": "10.128.8.0/21",
@@ -321,7 +329,5 @@
     },
     "rg": "hcp-underlay-dev-svc",
     "subscription": "ARO Hosted Control Planes (EA Subscription 1)"
-  },
-  "svcAcrName": "arohcpsvcdev",
-  "svcAcrZoneRedundantMode": "Disabled"
+  }
 }

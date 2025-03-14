@@ -1,0 +1,4 @@
+namespace: acrpull
+image: registry/image:tag
+ttlRotationFraction: 0.5
+replicas: 2

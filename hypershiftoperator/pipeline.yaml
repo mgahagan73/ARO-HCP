@@ -2,22 +2,22 @@ $schema: "pipeline.schema.v1"
 serviceGroup: Microsoft.Azure.ARO.HCP.RP.HypershiftOperator
 rolloutName: RP HypershiftOperator Rollout
 resourceGroups:
-- name: {{ .mgmt.rg }}
-  subscription: {{ .svc.subscription }}
-  aksCluster: {{ .mgmt.aks.name }}
+- name: '{{ .mgmt.rg  }}'
+  subscription: '{{ .svc.subscription  }}'
+  aksCluster: '{{ .mgmt.aks.name  }}'
   steps:
   - name: deploy
     action: Shell
     command: make deploy
     dryRun:
       variables:
-        - name: DRY_RUN
-          value: "true"
+      - name: DRY_RUN
+        value: "true"
     variables:
     - name: ARO_HCP_SVC_ACR
-      configRef: svcAcrName
+      configRef: acr.svc.name
     - name: ARO_HCP_OCP_ACR
-      configRef: ocpAcrName
+      configRef: acr.ocp.name
     - name: HO_IMAGE_DIGEST
       configRef: hypershift.image.digest
     - name: HO_IMAGE_REPOSITORY
