@@ -6,6 +6,7 @@ import (
 
 var (
 	Negative = Label("Negative")
+	Positive = Label("Positive")
 )
 
 // Test cases importance
