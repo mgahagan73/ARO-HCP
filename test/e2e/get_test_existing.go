@@ -21,7 +21,7 @@ var _ = Describe("Get operation", func() {
 	})
 
 	It("Get existing cluster", labels.Medium, labels.Positive, func(ctx context.Context) {
-		clusterName := "mgahaganhcp"
+		clusterName := "mgahagannp"
 		By("Send get request for cluster")
 		out, err := clustersClient.Get(ctx, customerRGName, clusterName, nil)
 		Expect(err).To(BeNil())
