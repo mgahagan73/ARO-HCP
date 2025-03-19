@@ -282,9 +282,8 @@ module aksClusterOutboundIPAddress '../modules/network/publicipaddress.bicep' = 
   }
 }
 
-resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-04-02-preview' = {
+resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-10-01' = {
   location: location
-  kind: 'Base'
   name: aksClusterName
   sku: {
     name: 'Base'
@@ -313,6 +312,16 @@ resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-04-02-previ
           rotationPollInterval: '5m'
         }
       }
+      omsagent: (logAnalyticsWorkspaceId != '')
+        ? {
+            enabled: true
+            config: {
+              logAnalyticsWorkspaceResourceID: logAnalyticsWorkspaceId
+            }
+          }
+        : {
+            enabled: false
+          }
     }
     agentPoolProfiles: [
       {
@@ -342,7 +351,6 @@ resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-04-02-previ
         securityProfile: {
           enableSecureBoot: false
           enableVTPM: false
-          sshAccess: 'Disabled'
         }
         nodeTaints: [
           'CriticalAddonsOnly=true:NoSchedule'
@@ -400,13 +408,9 @@ resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-04-02-previ
       networkDataplane: 'cilium'
       networkPolicy: 'cilium'
       networkPlugin: 'azure'
-      podLinkLocalAccess: 'IMDS'
       serviceCidr: serviceCidr
       serviceCidrs: [serviceCidr]
       dnsServiceIP: dnsServiceIP
-    }
-    nodeProvisioningProfile: {
-      mode: 'Manual'
     }
     nodeResourceGroup: aksNodeResourceGroupName
     oidcIssuerProfile: {
@@ -448,7 +452,6 @@ resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-04-02-previ
     storageProfile: {
       diskCSIDriver: {
         enabled: true
-        version: 'v1'
       }
       fileCSIDriver: {
         enabled: true
@@ -527,6 +530,7 @@ resource aksClusterDcr 'Microsoft.Insights/dataCollectionRules@2023-03-11' = if 
           'Microsoft-ContainerLog'
           'Microsoft-ContainerLogV2'
           'Microsoft-KubeEvents'
+          'Microsoft-KubePodInventory'
         ]
       }
     ]
@@ -542,7 +546,7 @@ resource aksClusterDcra 'Microsoft.Insights/dataCollectionRuleAssociations@2023-
   }
 }
 
-resource userAgentPools 'Microsoft.ContainerService/managedClusters/agentPools@2024-04-02-preview' = [
+resource userAgentPools 'Microsoft.ContainerService/managedClusters/agentPools@2024-10-01' = [
   for i in range(0, userAgentPoolAZCount): {
     parent: aksCluster
     name: 'user${take(string(i+1), 8)}'
@@ -572,7 +576,6 @@ resource userAgentPools 'Microsoft.ContainerService/managedClusters/agentPools@2
       securityProfile: {
         enableSecureBoot: false
         enableVTPM: false
-        sshAccess: 'Disabled'
       }
     }
   }

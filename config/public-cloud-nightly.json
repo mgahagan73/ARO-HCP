@@ -1,12 +1,12 @@
 {
   "acr": {
     "ocp": {
-      "name": "arohcpocpstg",
-      "zoneRedundantMode": "Enabled"
+      "name": "arohcpocpdev",
+      "zoneRedundantMode": "Disabled"
     },
     "svc": {
-      "name": "arohcpsvcstg",
-      "zoneRedundantMode": "Enabled"
+      "name": "arohcpsvcdev",
+      "zoneRedundantMode": "Disabled"
     }
   },
   "acrPull": {
@@ -16,47 +16,47 @@
       "repository": "aks/msi-acrpull"
     }
   },
-  "armHelperCertName": "",
-  "armHelperClientId": "",
-  "armHelperFPAPrincipalId": "",
-  "aroDevopsMsiId": "/subscriptions/9a53d80e-dae0-4c8a-af90-30575d253127/resourceGroups/global-shared-resources/providers/Microsoft.ManagedIdentity/userAssignedIdentities/global-ev2-identity",
+  "armHelperCertName": "armHelperCert2",
+  "armHelperClientId": "3331e670-0804-48e8-a086-6241671ddc93",
+  "armHelperFPAPrincipalId": "47f69502-0065-4d9a-b19b-d403e183d2f4",
+  "aroDevopsMsiId": "/subscriptions/1d3378d3-5a3f-4712-85a1-2485495dfc4b/resourceGroups/global/providers/Microsoft.ManagedIdentity/userAssignedIdentities/global-rollout-identity",
   "backend": {
     "image": {
-      "digest": "sha256:d7365c2638febc9d008e5246c8829fb51e866a54519d84fb4f077c8e7f4eb79c",
+      "digest": "",
       "repository": "arohcpbackend"
     }
   },
   "clusterService": {
     "azureOperatorsManagedIdentities": {
       "cloudControllerManager": {
-        "roleName": "Azure Red Hat OpenShift Cloud Controller Manager"
+        "roleName": "Azure Red Hat OpenShift Cloud Controller Manager - Dev"
       },
       "cloudNetworkConfig": {
-        "roleName": "Azure Red Hat OpenShift Network Operator"
+        "roleName": "Azure Red Hat OpenShift Network Operator - Dev"
       },
       "clusterApiAzure": {
-        "roleName": "Contributor"
+        "roleName": "Azure Red Hat OpenShift Control Plane Operator Role - Dev"
       },
       "controlPlane": {
-        "roleName": "Contributor"
+        "roleName": "Azure Red Hat OpenShift Cluster API Role - Dev"
       },
       "diskCsiDriver": {
-        "roleName": "Azure Red Hat OpenShift Disk Storage Operator"
+        "roleName": "Azure Red Hat OpenShift Disk Storage Operator - Dev"
       },
       "fileCsiDriver": {
-        "roleName": "Azure Red Hat OpenShift File Storage Operator"
+        "roleName": "Azure Red Hat OpenShift File Storage Operator - Dev"
       },
       "imageRegistry": {
-        "roleName": "Azure Red Hat OpenShift Image Registry Operator"
+        "roleName": "Azure Red Hat OpenShift Image Registry Operator - Dev"
       },
       "ingress": {
-        "roleName": "Azure Red Hat OpenShift Cluster Ingress Operator"
+        "roleName": "Azure Red Hat OpenShift Cluster Ingress Operator - Dev"
       },
       "kms": {
-        "roleName": "Key Vault Crypto User"
+        "roleName": "Azure Red Hat OpenShift KMS Plugin - Dev"
       }
     },
-    "environment": "arohcpstg",
+    "environment": "arohcpdev",
     "image": {
       "digest": "sha256:c8de5ac6f2000ee185b42442c3b7f29e2b6b1068849f48620075cd811834202b",
       "repository": "app-sre/uhc-clusters-service"
@@ -67,53 +67,53 @@
     },
     "managedIdentityName": "clusters-service",
     "postgres": {
-      "deploy": true,
+      "deploy": false,
       "minTLSVersion": "TLSV1.2",
-      "name": "arohcpstg-cs-usw3",
+      "name": "arohcp-cs-nightly",
       "private": false
     }
   },
   "cxKeyVault": {
-    "name": "arohcpstg-cx-usw3-1",
+    "name": "arohcp-cx-nightly-1",
     "private": false,
     "softDelete": false
   },
   "dns": {
-    "baseDnsZoneRG": "global-shared-resources",
-    "cxParentZoneName": "aroapp-hcp.io",
-    "parentZoneName": "azure.com",
-    "regionalSubdomain": "westus3staging",
-    "svcParentZoneName": "aro-hcp.azure.com"
+    "baseDnsZoneRG": "global",
+    "cxParentZoneName": "hcp.osadev.cloud",
+    "parentZoneName": "osadev.cloud",
+    "regionalSubdomain": "nightly",
+    "svcParentZoneName": "hcpsvc.osadev.cloud"
   },
   "extraVars": {},
-  "firstPartyAppCertName": "firstPartyCert",
-  "firstPartyAppClientId": "TBD",
+  "firstPartyAppCertName": "firstPartyCert2",
+  "firstPartyAppClientId": "b3cb2fab-15cb-4583-ad06-f91da9bfe2d1",
   "frontend": {
     "cert": {
-      "issuer": "OneCertV2-PublicCA",
-      "name": "frontend-cert"
+      "issuer": "Self",
+      "name": "frontend-cert-nightly"
     },
     "cosmosDB": {
       "deploy": true,
       "disableLocalAuth": true,
-      "name": "arohcpstg-rp-usw3",
+      "name": "arohcp-rp-nightly",
       "private": false,
-      "zoneRedundantMode": "Auto"
+      "zoneRedundantMode": "Disabled"
     },
     "image": {
-      "digest": "sha256:343bb768e38a829f13c4893e381c83fa602944809509b64e841f317ec2bf539b",
+      "digest": "",
       "repository": "arohcpfrontend"
     }
   },
   "genevaActions": {
-    "serviceTag": "GenevaActions"
+    "serviceTag": "GenevaActionsNonProd"
   },
   "global": {
-    "globalMSIName": "global-ev2-identity",
-    "region": "uksouth",
-    "rg": "global-shared-resources",
+    "globalMSIName": "global-rollout-identity",
+    "region": "westus3",
+    "rg": "global",
     "safeDnsIntAppObjectId": "",
-    "subscription": "hcp-global"
+    "subscription": "ARO Hosted Control Planes (EA Subscription 1)"
   },
   "hypershift": {
     "additionalInstallArg": "--tech-preview-no-upgrade",
@@ -127,40 +127,40 @@
     "componentSync": {
       "enabled": true,
       "image": {
-        "digest": "sha256:6a212720d25f270073318b1b480f326fcda08fbf6a1e435b7651e0336c72caee",
+        "digest": "sha256:d838c4910bc53a5583dd501ed7e3ab08aa7c08b45b5997c90764c65ceef01a8f",
         "repository": "image-sync/component-sync"
       },
       "pullSecretName": "component-sync-pull-secret",
-      "repositories": "quay.io/redhat-user-workloads/maestro-rhtap-tenant/maestro/maestro,arohcpsvcdev.azurecr.io/image-sync/component-sync,arohcpsvcdev.azurecr.io/arohcpfrontend,arohcpsvcdev.azurecr.io/arohcpbackend,quay.io/acm-d/rhtap-hypershift-operator,arohcpsvcdev.azurecr.io/image-sync/oc-mirror,quay.io/app-sre/uhc-clusters-service,quay.io/package-operator/package-operator-package",
-      "secrets": "quay.io:quay-io-bearer,arohcpsvcdev.azurecr.io:arohcpsvcdev-bearer"
+      "repositories": "quay.io/redhat-user-workloads/maestro-rhtap-tenant/maestro/maestro,quay.io/acm-d/rhtap-hypershift-operator,quay.io/app-sre/uhc-clusters-service,quay.io/package-operator/package-operator-package,quay.io/package-operator/package-operator-manager",
+      "secrets": "quay.io:quay-io-bearer"
     },
-    "environmentName": "global-shared-resources",
+    "environmentName": "aro-hcp-image-sync",
     "keyVault": {
-      "name": "arohcpstg-imagesync",
+      "name": "arohcp-imagesync-dev",
       "private": false,
-      "softDelete": true
+      "softDelete": false
     },
     "ocMirror": {
       "enabled": true,
       "image": {
-        "digest": "sha256:574ebb57e70c46ba3bc34db4776fd64b63a52e04afc1dddba7b91e0c5f247952",
+        "digest": "sha256:4affed9ff6397a5c44e9d1451fd58667f56e826b122819ccb6e1e8e045803c18",
         "repository": "image-sync/oc-mirror"
       },
-      "pullSecretName": "ocp-pull-secret"
+      "pullSecretName": "pull-secret"
     },
-    "rg": "global-shared-resources",
-    "secretsToSyncDir": "none"
+    "rg": "hcp-underlay-westus3-imagesync-dev",
+    "secretsToSyncDir": "dev/arohcp-imagesync-dev"
   },
-  "kvCertOfficerPrincipalId": "ce4e50ef-1059-4b6f-a53a-53001d517513",
+  "kvCertOfficerPrincipalId": "c9b1819d-bb29-4ac2-9abe-39e4fe9b59eb",
   "logs": {
     "loganalytics": {
       "enable": false
     },
     "mdsd": {
       "cert": {
-        "issuer": "OneCertV2-PrivateCA",
-        "name": "logs-mdsd",
-        "type": "x-pem-file"
+        "issuer": "",
+        "name": "",
+        "type": ""
       },
       "msiName": "logs-mdsd",
       "namespace": "logs",
@@ -170,7 +170,7 @@
   },
   "maestro": {
     "agent": {
-      "consumerName": "hcp-underlay-usw3-mgmt-1",
+      "consumerName": "hcp-underlay-nightly-mgmt-1",
       "loglevel": 4,
       "sidecar": {
         "image": {
@@ -180,11 +180,11 @@
         }
       }
     },
-    "certDomain": "",
-    "certIssuer": "OneCertV2-PrivateCA",
+    "certDomain": "selfsigned.maestro.keyvault.azure.com",
+    "certIssuer": "Self",
     "eventGrid": {
       "maxClientSessionsPerAuthName": 6,
-      "name": "arohcpstg-maestro-usw3",
+      "name": "arohcp-maestro-nightly",
       "private": false
     },
     "image": {
@@ -193,9 +193,9 @@
     },
     "postgres": {
       "databaseName": "maestro",
-      "deploy": true,
+      "deploy": false,
       "minTLSVersion": "TLSV1.2",
-      "name": "arohcpstg-maestro-usw3",
+      "name": "arohcp-maestro-nightly",
       "private": false,
       "serverStorageSizeGB": 32,
       "serverVersion": "15"
@@ -208,7 +208,7 @@
       },
       "loglevel": 4,
       "managedIdentityName": "maestro-server",
-      "mqttClientName": "maestro-server"
+      "mqttClientName": "maestro-server-nightly"
     }
   },
   "mce": {
@@ -218,90 +218,90 @@
   },
   "mgmt": {
     "aks": {
-      "clusterOutboundIPAddressIPTags": "FirstPartyUsage:arohcpprodoutboundcx",
+      "clusterOutboundIPAddressIPTags": "",
       "etcd": {
-        "kvName": "arohcpstg-etcd-usw3-1",
-        "kvSoftDelete": true
+        "kvName": "arohcp-etcd-nightly-1",
+        "kvSoftDelete": false
       },
       "kubernetesVersion": "1.31.5",
-      "name": "usw3-mgmt-1",
+      "name": "nightly-mgmt-1",
       "podSubnetPrefix": "10.128.64.0/18",
       "subnetPrefix": "10.128.8.0/21",
       "systemAgentPool": {
         "maxCount": 4,
         "minCount": 1,
-        "osDiskSizeGB": 128,
-        "vmSize": "Standard_E8s_v3"
+        "osDiskSizeGB": 32,
+        "vmSize": "Standard_D2s_v3"
       },
       "userAgentPool": {
         "azCount": 3,
-        "maxCount": 12,
+        "maxCount": 6,
         "minCount": 1,
-        "osDiskSizeGB": 128,
-        "vmSize": "Standard_D16s_v3"
+        "osDiskSizeGB": 100,
+        "vmSize": "Standard_D4s_v3"
       },
       "vnetAddressPrefix": "10.128.0.0/14"
     },
-    "applyKubeletFixes": true,
-    "logs": {
-      "configVersion": "1.0",
-      "namespace": "HCPManagementLogs",
-      "san": "MGMT.GENEVA.KEYVAULT.ARO-HCP-STG.AZURE.COM"
-    },
-    "rg": "hcp-underlay-westus3-mgmt-1",
-    "subscription": "hcp-westus3"
+    "applyKubeletFixes": false,
+    "rg": "hcp-underlay-nightly-mgmt-1",
+    "subscription": "ARO Hosted Control Planes (EA Subscription 1)"
   },
   "mgmtKeyVault": {
-    "name": "arohcpstg-mgmt-usw3-1",
+    "name": "arohcp-mgmt-nightly-1",
     "private": false,
     "softDelete": false
   },
-  "miMockCertName": "",
-  "miMockClientId": "",
-  "miMockPrincipalId": "",
+  "miMockCertName": "msiMockCert2",
+  "miMockClientId": "e8723db7-9b9e-46a4-9f7d-64d75c3534f0",
+  "miMockPrincipalId": "d6b62dfa-87f5-49b3-bbcb-4a687c4faa96",
   "mise": {
-    "armInstance": "https://management.core.windows.net/",
+    "armInstance": "",
     "azureAdClientId": "",
-    "azureAdInstance": "https://login.microsoftonline.com/",
-    "deploy": true,
+    "azureAdInstance": "",
+    "deploy": false,
     "image": {
-      "digest": "sha256:ad3f7efeeb6691c25bf31d46d7b879e06093ec2ff43c05ad32b5bc5315ab96a7",
-      "repository": "mise"
+      "digest": "",
+      "repository": ""
     },
     "validAppId0": "",
     "validAppId1": ""
   },
   "monitoring": {
-    "grafanaAdminGroupPrincipalId": "18d30381-f780-4915-8e55-de67daf7fb04",
-    "grafanaName": "arohcp-stg",
+    "grafanaAdminGroupPrincipalId": "6b6d3adf-8476-4727-9812-20ffdef2b85c",
+    "grafanaName": "arohcp-dev",
     "grafanaZoneRedundantMode": "Disabled",
-    "workspaceName": "arohcp-usw3"
+    "workspaceName": "arohcp-nightly"
   },
   "msiKeyVault": {
-    "name": "arohcpstg-msi-usw3-1",
+    "name": "arohcp-msi-nightly-1",
     "private": false,
     "softDelete": false
   },
-  "oidcStorageAccountName": "arohcpstgoidcusw3",
+  "oidcStorageAccountName": "arohcpoidcnightly",
   "oidcZoneRedundantMode": "Auto",
+  "pko": {
+    "image": "arohcpsvcdev.azurecr.io/package-operator/package-operator-package",
+    "imageManager": "arohcpsvcdev.azurecr.io/package-operator/package-operator-manager",
+    "imageTag": "v1.15.0"
+  },
   "region": "westus3",
-  "regionRG": "westus3-shared-resources",
+  "regionRG": "hcp-underlay-nightly",
   "serviceKeyVault": {
-    "name": "arohcpstg-svc-usw3",
+    "name": "aro-hcp-dev-svc-kv",
     "private": false,
     "region": "westus3",
-    "rg": "hcp-underlay-westus3-svc",
-    "softDelete": false
+    "rg": "global",
+    "softDelete": true
   },
   "svc": {
     "aks": {
-      "clusterOutboundIPAddressIPTags": "FirstPartyUsage:arohcpprodoutboundsvc",
+      "clusterOutboundIPAddressIPTags": "",
       "etcd": {
-        "kvName": "arohcpstg-etcd-usw3",
-        "kvSoftDelete": true
+        "kvName": "arohcp-etcd-nightly",
+        "kvSoftDelete": false
       },
       "kubernetesVersion": "1.31.5",
-      "name": "usw3-svc",
+      "name": "nightly-svc",
       "podSubnetPrefix": "10.128.64.0/18",
       "subnetPrefix": "10.128.8.0/21",
       "systemAgentPool": {
@@ -320,19 +320,14 @@
       "vnetAddressPrefix": "10.128.0.0/14"
     },
     "istio": {
-      "ingressGatewayIPAddressIPTags": "FirstPartyUsage:arohcpprodinboundsvc",
+      "ingressGatewayIPAddressIPTags": "",
       "ingressGatewayIPAddressName": "aro-hcp-istio-ingress",
-      "istioctlVersion": "1.24.1",
+      "istioctlVersion": "1.23.1",
       "tag": "prod-stable",
       "targetVersion": "asm-1-23",
       "versions": "asm-1-23"
     },
-    "logs": {
-      "configVersion": "1.0",
-      "namespace": "HCPServiceLogs",
-      "san": "SVC.GENEVA.KEYVAULT.ARO-HCP-STG.AZURE.COM"
-    },
-    "rg": "hcp-underlay-westus3-svc",
-    "subscription": "hcp-westus3"
+    "rg": "hcp-underlay-nightly-svc",
+    "subscription": "ARO Hosted Control Planes (EA Subscription 1)"
   }
 }
