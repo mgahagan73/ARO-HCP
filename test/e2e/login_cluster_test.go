@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -33,13 +32,15 @@ var _ = Describe("Cluster login operation", func() {
 		out, err := clustersClient.Get(ctx, customerRGName, clusterName, nil)
 		Expect(err).To(BeNil())
 		Expect(string(*out.Properties.ProvisioningState)).To(Equal(("Succeeded")))
-		clusterApiUrl := string(*out.Properties.api.URL)
-		Expect(clusterApiUrl).To(ContainSubstring("https//"))
+		clusterApiUrl := string(*out.Properties.API.URL)
+		Expect(clusterApiUrl).To(ContainSubstring("https://"))
 		By("Log in with oc command")
-		oc_command := fmt.Sprintf("oc login -u kubeadmin -p " + kubeadminPassword + " " + clusterApiUrl)
-		stdout, _, err := cmdline.RunCMD(oc_command)
+		//oc_command := fmt.Sprintf("oc login -u kubeadmin -p " + kubeadminPassword + " " + clusterApiUrl)
+		oc_command := "oc --insecure-skip-tls-verify login -u kubeadmin -p " + kubeadminPassword + " " + clusterApiUrl
+		stdout, stderr, err := cmdline.RunCMD(oc_command)
+		Expect(stderr).ToNot(ContainSubstring("error"))
+		Expect(stdout).To(ContainSubstring("Login successful."))
 		Expect(err).To(BeNil())
-		Expect(stdout).To(ContainSubstring("blah blah"))
 	})
 
 })
