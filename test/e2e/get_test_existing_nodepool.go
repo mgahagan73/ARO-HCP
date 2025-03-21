@@ -2,7 +2,8 @@ package e2e
 
 import (
 	"context"
-	//"fmt"
+	"fmt"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -23,12 +24,12 @@ var _ = Describe("Nodepool operation", func() {
 	})
 
 	var (
-		//nodePoolName = "mgnodes1"
+		nodePoolName = os.Getenv("NP_NAME")
 		//nodePoolResource api.HcpOpenShiftClusterNodePoolResource
 		nodePoolOptions *api.NodePoolsClientListByParentOptions
 	)
 	It("List nodepools", labels.Medium, labels.Negative, func(ctx context.Context) {
-		clusterName := "mgahagannp"
+		clusterName := os.Getenv("CLUSTER_NAME")
 		By("Send get request for nodepool")
 		nodePoolList := NodePoolsClient.NewListByParentPager(customerRGName, clusterName, nodePoolOptions)
 		Expect(nodePoolList).ToNot(BeNil())
@@ -38,7 +39,9 @@ var _ = Describe("Nodepool operation", func() {
 			nodePools, err := nodePoolList.NextPage(ctx)
 			Expect(err).To(BeNil())
 			log.Logger.Infoln("Number of nodePools:", len(nodePools.Value))
-			Expect(nodePools.HcpOpenShiftClusterNodePoolResourceListResult.MarshalJSON()).Should(MatchJSON(`{"name":"mgnodes1"}`))
+			//jsonmatch := fmt.Sprintf(`{"name": "` + nodePoolName + `"}`)
+			jsonmatch := fmt.Sprintf(`value[?name == '` + nodePoolName + `']`)
+			Expect(nodePools.HcpOpenShiftClusterNodePoolResourceListResult.MarshalJSON()).Should(MatchJSON(jsonmatch))
 		}
 	})
 })

@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,7 +22,7 @@ var _ = Describe("Get operation", func() {
 	})
 
 	It("Get existing cluster", labels.Medium, labels.Positive, func(ctx context.Context) {
-		clusterName := "mgahagannp"
+		clusterName := os.Getenv("CLUSTER_NAME")
 		By("Send get request for cluster")
 		out, err := clustersClient.Get(ctx, customerRGName, clusterName, nil)
 		Expect(err).To(BeNil())
