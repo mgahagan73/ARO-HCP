@@ -51,6 +51,14 @@ resourceGroups:
 - name: '{{ .imageSync.rg  }}'
   subscription: '{{ .global.subscription  }}'
   steps:
+  # deploys the image mirror for the ACRs
+  - name: imagemirror
+    action: ARM
+    template: templates/global-image-sync.bicep
+    parameters: configurations/global-image-sync.tmpl.bicepparam
+    deploymentLevel: ResourceGroup
+    dependsOn:
+    - global-acrs
   - name: decrypt-and-ingest-secrets
     action: Shell
     command: ../tooling/secret-sync/decrypt-all.sh
@@ -64,13 +72,4 @@ resourceGroups:
     - name: SECRETFOLDER
       configRef: imageSync.secretsToSyncDir
     dependsOn:
-    - global-infra
-  # deploys the image mirror for the ACRs
-  #- name: imagemirror
-  #  action: ARM
-  #  template: templates/global-image-sync.bicep
-  #  parameters: configurations/global-image-sync.tmpl.bicepparam
-  #  deploymentLevel: ResourceGroup
-  #  dependsOn:
-  #  - decrypt-and-ingest-secrets
-  #  - global-acrs
+    - imagemirror
