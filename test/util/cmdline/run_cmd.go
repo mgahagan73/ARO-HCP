@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-// From rosa e2e repo
 func RunCMD(cmd string) (stdout string, stderr string, err error) {
 	var stdoutput bytes.Buffer
 	var stderroutput bytes.Buffer
