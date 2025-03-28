@@ -33,6 +33,10 @@ defaults:
     subscription: hcp-global
     globalMSIName: "global-ev2-identity"
     safeDnsIntAppObjectId: "" # intentionally blank - only required in INT
+    keyVault:
+      private: false
+      softDelete: true
+    secretsToSyncDir: "none"
   # ACR
   acr:
     svc:
@@ -217,9 +221,7 @@ defaults:
       serviceAccountName: clusters-service
   # Image Sync
   imageSync:
-    rg: global-shared-resources
     environmentName: global-shared-resources
-    secretsToSyncDir: "none"
     componentSync:
       enabled: true
       image:
@@ -231,10 +233,7 @@ defaults:
       enabled: true
       image:
         repository: image-sync/oc-mirror
-      pullSecretName: ocp-pull-secret
-    keyVault:
-      private: false
-      softDelete: true
+      pullSecretName: ocmirror-pull-secret
   # MCE
   mce:
     clcStateMetrics:
@@ -288,22 +287,20 @@ clouds:
           global:
             region: uksouth
             safeDnsIntAppObjectId: "c54b6bce-1cd3-4d37-bebe-aa22f4ce4fbc"
+            keyVault:
+              name: arohcpint-global # [globally-unique]
           # Cluster Service
           clusterService:
             environment: "arohcpint"
             postgres:
               name: "arohcpint-cs-{{ .ctx.regionShort }}" # [globally-unique]
             image:
-              digest: sha256:c8de5ac6f2000ee185b42442c3b7f29e2b6b1068849f48620075cd811834202b
+              digest: sha256:89a09675100b106a6e7e0b21d6841338ee229fa637abea67d32b53d8052696cd
           # Geneva Actions
           genevaActions:
             serviceTag: GenevaActionsNonProd
           # OIDC
           oidcStorageAccountName: "arohcpintoidc{{ .ctx.regionShort }}" # [globally-unique]
-          # Image Sync
-          imageSync:
-            keyVault:
-              name: arohcpint-imagesync # [globally-unique]
           # SVC KV
           serviceKeyVault:
             name: "arohcpint-svc-{{ .ctx.regionShort }}" # [globally-unique]
@@ -416,22 +413,20 @@ clouds:
           # Region for global resources in STAGE is uksouth
           global:
             region: uksouth
+            keyVault:
+              name: arohcpstg-global # [globally-unique]
           # Cluster Service
           clusterService:
             environment: "arohcpstg"
             postgres:
               name: "arohcpstg-cs-{{ .ctx.regionShort }}" # [globally-unique]
             image:
-              digest: sha256:c8de5ac6f2000ee185b42442c3b7f29e2b6b1068849f48620075cd811834202b
+              digest: sha256:89a09675100b106a6e7e0b21d6841338ee229fa637abea67d32b53d8052696cd
           # Geneva Actions
           genevaActions:
             serviceTag: GenevaActions
           # OIDC
           oidcStorageAccountName: "arohcpstgoidc{{ .ctx.regionShort }}" # [globally-unique]
-          # Image Sync
-          imageSync:
-            keyVault:
-              name: arohcpstg-imagesync # [globally-unique]
           # SVC KV
           serviceKeyVault:
             name: "arohcpstg-svc-{{ .ctx.regionShort }}" # [globally-unique]

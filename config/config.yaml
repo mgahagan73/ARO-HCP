@@ -8,6 +8,11 @@ defaults:
     region: westus3
     globalMSIName: "global-rollout-identity"
     safeDnsIntAppObjectId: "" # intentionally left empty
+    secretsToSyncDir: "dev/arohcpdev-global"
+    keyVault:
+      name: arohcpdev-global
+      private: false
+      softDelete: true
   # ACR Pull
   acrPull:
     image:
@@ -148,9 +153,7 @@ defaults:
       serviceAccountName: clusters-service
   # Image Sync
   imageSync:
-    rg: hcp-underlay-{{ .ctx.regionShort }}-imagesync
     environmentName: aro-hcp-image-sync
-    secretsToSyncDir: "dev/arohcp-imagesync-dev"
     componentSync:
       enabled: true
       image:
@@ -164,11 +167,7 @@ defaults:
       image:
         repository: image-sync/oc-mirror
         digest: sha256:4affed9ff6397a5c44e9d1451fd58667f56e826b122819ccb6e1e8e045803c18
-      pullSecretName: pull-secret
-    keyVault:
-      name: arohcp-imagesync-dev
-      private: false
-      softDelete: false
+      pullSecretName: ocmirror-pull-secret
   # MCE
   mce:
     clcStateMetrics:
@@ -225,7 +224,7 @@ clouds:
       # Cluster Service
       clusterService:
         image:
-          digest: sha256:c8de5ac6f2000ee185b42442c3b7f29e2b6b1068849f48620075cd811834202b
+          digest: sha256:89a09675100b106a6e7e0b21d6841338ee229fa637abea67d32b53d8052696cd
         azureOperatorsManagedIdentities:
           clusterApiAzure:
             roleName: Azure Red Hat OpenShift Control Plane Operator Role - Dev
@@ -318,9 +317,6 @@ clouds:
         ocp:
           name: arohcpocpdev
           zoneRedundantMode: Disabled
-      # Shared Image Sync
-      imageSync:
-        rg: hcp-underlay-westus3-imagesync-dev
       # OIDC
       oidcStorageAccountName: arohcpoidc{{ .ctx.regionShort }}
       oidcZoneRedundantMode: Auto
