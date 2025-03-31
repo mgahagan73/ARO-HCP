@@ -1,8 +1,22 @@
+import {
+  csvToArray
+  determineZoneRedundancy
+  determineZoneRedundancyForRegion
+  getLocationAvailabilityZonesCSV
+  parseIPServiceTag
+} from '../modules/common.bicep'
+
 @description('Azure Region Location')
-param location string = resourceGroup().location
+param location string
 
 @description('Specifies the name of the container app environment.')
 param containerAppEnvName string
+
+@description('Container app public IP service tags')
+param containerAppOutboundServiceTags string
+var containerAppOutboundServiceTagsArray = [
+  for tag in (csvToArray(containerAppOutboundServiceTags)): parseIPServiceTag(tag)
+]
 
 @description('Specifies the name of the log analytics workspace.')
 param containerAppLogAnalyticsName string = 'containerapp-log'
@@ -51,7 +65,7 @@ param ocpPullSecretName string
 param componentSyncSecrets string
 
 var csSecrets = [
-  for secret in split(componentSyncSecrets, ','): {
+  for secret in csvToArray(componentSyncSecrets): {
     registry: split(secret, ':')[0]
     secret: split(secret, ':')[1]
   }
@@ -80,6 +94,106 @@ resource kv 'Microsoft.KeyVault/vaults@2024-04-01-preview' existing = {
 // Container App Infra
 //
 
+var locationAvailabilityZones = csvToArray(getLocationAvailabilityZonesCSV(location))
+var locationHasAvailabilityZones = length(locationAvailabilityZones) > 0
+module containerAppOutboundPublicIP '../modules/network/publicipaddress.bicep' = {
+  name: 'containerapp-nat-gateway-ip'
+  params: {
+    name: 'containerapp-nat-gateway-ip'
+    ipTags: containerAppOutboundServiceTagsArray
+    location: location
+    zones: locationHasAvailabilityZones ? locationAvailabilityZones : null
+  }
+}
+
+resource containerAppNatGateway 'Microsoft.Network/natGateways@2023-02-01' = {
+  name: 'containerapp-nat-gateway'
+  location: location
+  sku: {
+    name: 'Standard'
+  }
+  properties: {
+    publicIpAddresses: [
+      {
+        id: containerAppOutboundPublicIP.outputs.resourceId
+      }
+    ]
+    idleTimeoutInMinutes: 4
+  }
+}
+
+resource containerVnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
+  name: 'containerapp-vnet'
+  location: location
+  properties: {
+    addressSpace: {
+      addressPrefixes: [
+        '10.0.0.0/16'
+      ]
+    }
+    subnets: [
+      {
+        name: 'containerapp-subnet'
+        properties: {
+          defaultOutboundAccess: false
+          addressPrefix: '10.0.0.0/23'
+          delegations: [
+            {
+              name: 'Microsoft.App.environments'
+              properties: {
+                serviceName: 'Microsoft.App/environments'
+              }
+              type: 'Microsoft.Network/virtualNetworks/subnets/delegations'
+            }
+          ]
+          natGateway: {
+            id: containerAppNatGateway.id
+          }
+        }
+        type: 'Microsoft.Network/virtualNetworks/subnets'
+      }
+      {
+        name: 'acr-pe-subnet'
+        properties: {
+          defaultOutboundAccess: false
+          addressPrefix: '10.0.2.0/24'
+        }
+        type: 'Microsoft.Network/virtualNetworks/subnets'
+      }
+    ]
+  }
+}
+
+var containerAppSubnetId = containerVnet.properties.subnets[0].id
+var acrPeSubnetId = containerVnet.properties.subnets[1].id
+
+module svcAcrPrivateEndpoint '../modules/private-endpoint.bicep' = {
+  name: 'svc-acr-pe'
+  params: {
+    location: location
+    subnetIds: [acrPeSubnetId]
+    vnetId: containerVnet.id
+    privateLinkServiceId: resourceId(acrResourceGroup, 'Microsoft.ContainerRegistry/registries', svcAcrName)
+    serviceType: 'acr'
+    groupId: 'registry'
+  }
+}
+
+module ocpAcrPrivateEndpoint '../modules/private-endpoint.bicep' = {
+  name: 'ocp-acr-pe'
+  params: {
+    location: location
+    subnetIds: [acrPeSubnetId]
+    vnetId: containerVnet.id
+    privateLinkServiceId: resourceId(acrResourceGroup, 'Microsoft.ContainerRegistry/registries', ocpAcrName)
+    serviceType: 'acr'
+    groupId: 'registry'
+  }
+  dependsOn: [
+    svcAcrPrivateEndpoint
+  ]
+}
+
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-06-01' = {
   name: containerAppLogAnalyticsName
   location: location
@@ -101,6 +215,16 @@ resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' 
         sharedKey: logAnalytics.listKeys().primarySharedKey
       }
     }
+    vnetConfiguration: {
+      infrastructureSubnetId: containerAppSubnetId
+    }
+    workloadProfiles: [
+      {
+        name: 'Consumption'
+        workloadProfileType: 'Consumption'
+      }
+    ]
+    zoneRedundant: locationHasAvailabilityZones
   }
 }
 
@@ -268,6 +392,8 @@ resource componentSyncJob 'Microsoft.App/jobs@2024-03-01' = if (componentSyncEna
   dependsOn: [
     kv
     acrPushPullPermissions
+    ocpAcrPrivateEndpoint
+    svcAcrPrivateEndpoint
   ]
 }
 
@@ -330,6 +456,9 @@ var acmMirrorConfig = {
               {
                 name: 'multicluster-engine.v2.7.0'
               }
+              {
+                name: 'multicluster-engine.v2.8.0'
+              }
             ]
           }
           {
@@ -337,6 +466,9 @@ var acmMirrorConfig = {
             bundles: [
               {
                 name: 'advanced-cluster-management.v2.12.0'
+              }
+              {
+                name: 'advanced-cluster-management.v2.13.0'
               }
             ]
           }
@@ -349,7 +481,7 @@ var acmMirrorConfig = {
 var ocMirrorJobConfiguration = ocMirrorEnabled
   ? [
       {
-        name: 'oc-mirror'
+        name: 'oc-mirror-tmp'
         cron: '0 * * * *'
         timeout: 4 * 60 * 60
         targetRegistry: ocpAcrName
@@ -357,7 +489,7 @@ var ocMirrorJobConfiguration = ocMirrorEnabled
         compatibility: 'LATEST'
       }
       {
-        name: 'acm-mirror'
+        name: 'acm-mirror-tmp'
         cron: '0 10 * * *'
         timeout: 4 * 60 * 60
         targetRegistry: svcAcrName
@@ -468,6 +600,8 @@ resource ocMirrorJobs 'Microsoft.App/jobs@2024-03-01' = [
     dependsOn: [
       kv
       acrPushPullPermissions
+      ocpAcrPrivateEndpoint
+      svcAcrPrivateEndpoint
     ]
   }
 ]

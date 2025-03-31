@@ -1,9 +1,11 @@
 using '../templates/global-image-sync.bicep'
 
 param containerAppEnvName = '{{ .imageSync.environmentName }}'
+param containerAppOutboundServiceTags = '{{ .imageSync.outboundServiceTags }}'
+param location = '{{ .global.region }}'
 
 param acrResourceGroup = '{{ .global.rg }}'
-param keyVaultName = '{{ .global.keyVault.name}}'
+param keyVaultName = '{{ .global.keyVault.name }}'
 
 param componentSyncPullSecretName = '{{ .imageSync.componentSync.pullSecretName }}'
 param componentSyncImage = '{{ .acr.svc.name }}.azurecr.io/{{ .imageSync.componentSync.image.repository }}@{{ .imageSync.componentSync.image.digest }}'
