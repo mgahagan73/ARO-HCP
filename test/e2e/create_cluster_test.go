@@ -25,7 +25,7 @@ var _ = Describe("Create Cluster operation", func() {
 		clusterName := "non-existing-cluster"
 		customerRGName := "non-existing-group"
 		var (
-			clusterResource api.HcpOpenShiftClusterResource
+			clusterResource api.HcpOpenShiftCluster
 			clusterOptions  *api.HcpOpenShiftClustersClientBeginCreateOrUpdateOptions
 		)
 		By("Send request to create cluster")

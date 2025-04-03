@@ -23,7 +23,7 @@ var _ = Describe("Nodepool operation", func() {
 
 	var (
 		nodePoolName     = "mynodepool"
-		nodePoolResource api.HcpOpenShiftClusterNodePoolResource
+		nodePoolResource api.NodePool
 		nodePoolOptions  *api.HcpOpenShiftClustersClientBeginCreateOrUpdateOptions
 	)
 	It("Create invalid nodepool", labels.Medium, labels.Negative, func(ctx context.Context) {
