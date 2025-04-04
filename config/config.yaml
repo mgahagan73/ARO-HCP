@@ -22,7 +22,7 @@ defaults:
   # Hypershift
   hypershift:
     namespace: hypershift
-    additionalInstallArg: '--tech-preview-no-upgrade'
+    additionalInstallArg: ''
   # Log settings
   logs:
     mdsd:
@@ -90,10 +90,9 @@ defaults:
   mise:
     deploy: false
     azureAdInstance: ""
-    azureAdClientId: ""
+    firstPartyAppId: ""
     armInstance: ""
-    validAppId0: ""
-    validAppId1: ""
+    armAppId: ""
     image:
       repository: ""
       digest: ""
@@ -171,7 +170,7 @@ defaults:
       image:
         registry: arohcpsvcdev.azurecr.io
         repository: image-sync/oc-mirror
-        digest: sha256:82b42792660e6024b0721f80b920421ac62a451c3b3677175dad289d1400f032
+        digest: sha256:6016058b113d0dd61fce42747cc4cf6b0d47bbe260892a9825d24d19b6834ef4
       pullSecretName: ocmirror-pull-secret
   # MCE
   mce:
@@ -254,7 +253,7 @@ clouds:
         image:
           registry: quay.io
           repository: acm-d/rhtap-hypershift-operator
-          digest: sha256:305f45bf036f84255d41c20517c70a9cb18af3dcdfa71a82a5716dde77c9e2c3
+          digest: sha256:0e6706e3bbc058a65f34dad7ccf048e56b1f32ca610c6f39f085ddb8bb1169ef
       # Frontend
       frontend:
         image:

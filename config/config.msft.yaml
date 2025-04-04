@@ -64,7 +64,7 @@ defaults:
   # Hypershift
   hypershift:
     namespace: hypershift
-    additionalInstallArg: '--tech-preview-no-upgrade'
+    additionalInstallArg: ''
     image:
       registry: quay.io
       repository: acm-d/rhtap-hypershift-operator
@@ -126,7 +126,7 @@ defaults:
       clusterOutboundIPAddressIPTags: ""
     applyKubeletFixes: true
     logs:
-      namespace: HCPManagementLogs
+      namespace: HCPCustomerLogs
   # RP Frontend
   frontend:
     image:
@@ -140,22 +140,16 @@ defaults:
       disableLocalAuth: true
       private: true
       zoneRedundantMode: Auto
+  # Mise
+  mise:
+    deploy: true
+    image:
+      repository: mise
   # RP Backend
   backend:
     image:
       registry: arohcpsvcdev.azurecr.io
       repository: arohcpbackend
-  # Mise
-  mise:
-    deploy: true
-    azureAdInstance: https://login.microsoftonline.com/
-    azureAdClientId: ""
-    armInstance: https://management.core.windows.net/
-    validAppId0: ""
-    validAppId1: ""
-    image:
-      repository: mise
-      digest: sha256:ad3f7efeeb6691c25bf31d46d7b879e06093ec2ff43c05ad32b5bc5315ab96a7
   # Maestro
   maestro:
     server:
@@ -286,7 +280,10 @@ clouds:
             digest: sha256:6a212720d25f270073318b1b480f326fcda08fbf6a1e435b7651e0336c72caee
         ocMirror:
           image:
-            digest: sha256:82b42792660e6024b0721f80b920421ac62a451c3b3677175dad289d1400f032
+            digest: sha256:6016058b113d0dd61fce42747cc4cf6b0d47bbe260892a9825d24d19b6834ef4
+      mise:
+        azureAdInstance: https://login.microsoftonline.com/
+        armInstance: https://management.azure.com
     environments:
       int:
         # this is the MSFT INT environment
@@ -373,15 +370,21 @@ clouds:
               name: "arohcpint-rp-{{ .ctx.regionShort }}" # [globally-unique]
               private: false
             image:
-              digest: sha256:0e6b1e3e5279788552f79780f5a193dcd554ec6728364b505cb7f90a92a6a43e
+              digest: sha256:e9f39492701b13b90a554374156bb4c73654f2bc849bea98132be40cae948364
+          # Mise
+          mise:
+            firstPartyAppId: 5bc505bc-50ef-4be9-9a82-2ed7973f1c37 # This is the aro-hcp-fp-int app in the MSIT Tenant.
+            armAppId: e2c2ff5c-e5b4-4e79-8c3e-1da8c48461e7
+            image:
+              digest: sha256:d56506305ea64f368c920e5e4bce6ee44415d4133559a548b82a81bbd1828f9b
           # RP Backend
           backend:
             image:
-              digest: sha256:7eab98c23616c1211c987107588387c18487191278812e6f15fcd888ecee1256
+              digest: sha256:a2953aef23ac3dc376485fafefdbb2d949aebb11f6f9029bcae836bab929d5c3
           # Hypershift
           hypershift:
             image:
-              digest: sha256:305f45bf036f84255d41c20517c70a9cb18af3dcdfa71a82a5716dde77c9e2c3
+              digest: sha256:0e6706e3bbc058a65f34dad7ccf048e56b1f32ca610c6f39f085ddb8bb1169ef
           # Maestro
           maestro:
             eventGrid:
@@ -502,17 +505,23 @@ clouds:
               name: "arohcpstg-rp-{{ .ctx.regionShort }}" # [globally-unique]
               private: false
             image:
-              digest: sha256:343bb768e38a829f13c4893e381c83fa602944809509b64e841f317ec2bf539b
+              digest: sha256:e9f39492701b13b90a554374156bb4c73654f2bc849bea98132be40cae948364
             cert:
               issuer: OneCertV2-PrivateCA # let's use private until we have approval for public
+          # Mise
+          mise:
+            firstPartyAppId: 7f4a113a-c61d-412a-bea1-85dee5baf4a8
+            armAppId: e2c2ff5c-e5b4-4e79-8c3e-1da8c48461e7
+            image:
+              digest: sha256:d56506305ea64f368c920e5e4bce6ee44415d4133559a548b82a81bbd1828f9b
           # RP Backend
           backend:
             image:
-              digest: sha256:d7365c2638febc9d008e5246c8829fb51e866a54519d84fb4f077c8e7f4eb79c
+              digest: sha256:a2953aef23ac3dc376485fafefdbb2d949aebb11f6f9029bcae836bab929d5c3
           # Hypershift
           hypershift:
             image:
-              digest: sha256:305f45bf036f84255d41c20517c70a9cb18af3dcdfa71a82a5716dde77c9e2c3
+              digest: sha256:0e6706e3bbc058a65f34dad7ccf048e56b1f32ca610c6f39f085ddb8bb1169ef
           # Maestro
           maestro:
             eventGrid:

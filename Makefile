@@ -45,7 +45,7 @@ yamlfmt: $(YAMLFMT)
 	# first, wrap all templated values in quotes, so they are correct YAML
 	./yamlfmt.wrap.sh
 	# run the formatter
-	$(YAMLFMT) -dstar '**/*.{yaml,yml}'
+	$(YAMLFMT) -dstar -exclude './api/**' '**/*.{yaml,yml}'
 	# "fix" any non-string fields we cast to strings for the formatting
 	./yamlfmt.unwrap.sh
 .PHONY: yamlfmt
@@ -122,9 +122,9 @@ infra.clean:
 	@cd dev-infrastructure && DEPLOY_ENV=$(DEPLOY_ENV) make clean
 .PHONY: infra.clean
 
-infra.observability:
-	cd observability && KUBECONFIG="$$(cd ../dev-infrastructure && make -s svc.aks.kubeconfigfile)" make
-.PHONY: infra.observability
+infra.tracing:
+	cd observability/tracing && KUBECONFIG="$$(cd ../../dev-infrastructure && make -s svc.aks.kubeconfigfile)" make
+.PHONY: infra.tracing
 
 #
 # Services

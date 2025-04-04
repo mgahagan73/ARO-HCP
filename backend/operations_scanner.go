@@ -41,6 +41,23 @@ const (
 	pollNodePoolOperationLabel = "poll_node_pool"
 )
 
+// Copied from uhc-clusters-service, because the
+// OCM SDK does not define this for some reason.
+type NodePoolStateValue string
+
+const (
+	NodePoolStateValidating       NodePoolStateValue = "validating"
+	NodePoolStatePending          NodePoolStateValue = "pending"
+	NodePoolStateInstalling       NodePoolStateValue = "installing"
+	NodePoolStateReady            NodePoolStateValue = "ready"
+	NodePoolStateUpdating         NodePoolStateValue = "updating"
+	NodePoolStateValidatingUpdate NodePoolStateValue = "validating_update"
+	NodePoolStatePendingUpdate    NodePoolStateValue = "pending_update"
+	NodePoolStateUninstalling     NodePoolStateValue = "uninstalling"
+	NodePoolStateRecoverableError NodePoolStateValue = "recoverable_error"
+	NodePoolStateError            NodePoolStateValue = "error"
+)
+
 type operation struct {
 	id     string
 	pk     azcosmos.PartitionKey
@@ -305,29 +322,30 @@ func (s *OperationsScanner) processSubscriptions(logger *slog.Logger) {
 func (s *OperationsScanner) processOperations(ctx context.Context, subscriptionID string, logger *slog.Logger) {
 	defer s.updateOperationMetrics(processOperationsLabel)()
 
-	var numProcessed int
-
 	pk := database.NewPartitionKey(subscriptionID)
 
-	iterator := s.dbClient.ListOperationDocs(pk)
+	iterator := s.dbClient.ListActiveOperationDocs(pk, nil)
 
 	for operationID, operationDoc := range iterator.Items(ctx) {
-		if !operationDoc.Status.IsTerminal() {
-			operationLogger := logger.With(
-				"operation", operationDoc.Request,
-				"operation_id", operationID,
-				"resource_id", operationDoc.ExternalID.String(),
-				"internal_id", operationDoc.InternalID.String())
-			op := operation{operationID, pk, operationDoc, operationLogger}
+		operationLogger := logger.With(
+			"operation", operationDoc.Request,
+			"operation_id", operationID,
+			"resource_id", operationDoc.ExternalID.String(),
+			"internal_id", operationDoc.InternalID.String())
+		op := operation{operationID, pk, operationDoc, operationLogger}
 
-			switch operationDoc.InternalID.Kind() {
-			case cmv1.ClusterKind:
+		switch operationDoc.InternalID.Kind() {
+		case cmv1.ClusterKind:
+			switch operationDoc.Request {
+			case database.OperationRequestRevokeCredentials:
+				s.pollBreakGlassCredentialRevoke(ctx, op)
+			default:
 				s.pollClusterOperation(ctx, op)
-				numProcessed++
-			case cmv1.NodePoolKind:
-				s.pollNodePoolOperation(ctx, op)
-				numProcessed++
 			}
+		case cmv1.NodePoolKind:
+			s.pollNodePoolOperation(ctx, op)
+		case cmv1.BreakGlassCredentialKind:
+			s.pollBreakGlassCredential(ctx, op)
 		}
 	}
 
@@ -376,7 +394,7 @@ func (s *OperationsScanner) pollClusterOperation(ctx context.Context, op operati
 func (s *OperationsScanner) pollNodePoolOperation(ctx context.Context, op operation) {
 	defer s.updateOperationMetrics(pollNodePoolOperationLabel)()
 
-	_, err := s.clusterService.GetNodePool(ctx, op.doc.InternalID)
+	nodePoolStatus, err := s.clusterService.GetNodePoolStatus(ctx, op.doc.InternalID)
 	if err != nil {
 		var ocmError *ocmerrors.Error
 		if errors.As(err, &ocmError) && ocmError.Status() == http.StatusNotFound && op.doc.Request == database.OperationRequestDelete {
@@ -387,7 +405,125 @@ func (s *OperationsScanner) pollNodePoolOperation(ctx context.Context, op operat
 		} else {
 			op.logger.Error(fmt.Sprintf("Failed to get node pool status: %v", err))
 		}
+
+		s.operationsFailedCount.WithLabelValues(pollNodePoolOperationLabel).Inc()
 		return
+	}
+
+	opStatus, opError, err := convertNodePoolStatus(nodePoolStatus, op.doc.Status)
+	if err != nil {
+		s.operationsFailedCount.WithLabelValues(pollNodePoolOperationLabel).Inc()
+		op.logger.Warn(err.Error())
+		return
+	}
+
+	err = s.updateOperationStatus(ctx, op, opStatus, opError)
+	if err != nil {
+		s.operationsFailedCount.WithLabelValues(pollNodePoolOperationLabel).Inc()
+		op.logger.Error(fmt.Sprintf("Failed to update operation status: %v", err))
+	}
+}
+
+// pollBreakGlassCredential updates the status of a credential creation operation.
+func (s *OperationsScanner) pollBreakGlassCredential(ctx context.Context, op operation) {
+	breakGlassCredential, err := s.clusterService.GetBreakGlassCredential(ctx, op.doc.InternalID)
+	if err != nil {
+		op.logger.Error(fmt.Sprintf("Failed to get break-glass credential: %v", err))
+		return
+	}
+
+	var opStatus arm.ProvisioningState = op.doc.Status
+	var opError *arm.CloudErrorBody
+
+	switch status := breakGlassCredential.Status(); status {
+	case cmv1.BreakGlassCredentialStatusCreated:
+		opStatus = arm.ProvisioningStateProvisioning
+	case cmv1.BreakGlassCredentialStatusFailed:
+		// XXX Cluster Service does not provide a reason for the failure,
+		//     so we have no choice but to use a generic error message.
+		opStatus = arm.ProvisioningStateFailed
+		opError = &arm.CloudErrorBody{
+			Code:    arm.CloudErrorCodeInternalServerError,
+			Message: "Failed to provision cluster credential",
+		}
+	case cmv1.BreakGlassCredentialStatusIssued:
+		opStatus = arm.ProvisioningStateSucceeded
+	default:
+		op.logger.Error(fmt.Sprintf("Unhandled BreakGlassCredentialStatus '%s'", status))
+		return
+	}
+
+	updated, err := s.dbClient.UpdateOperationDoc(ctx, op.pk, op.id, func(updateDoc *database.OperationDocument) bool {
+		return updateDoc.UpdateStatus(opStatus, opError)
+	})
+	if err != nil {
+		op.logger.Error(fmt.Sprintf("Failed to update operation status: %v", err))
+	}
+	if updated {
+		op.logger.Info(fmt.Sprintf("Updated status to '%s'", opStatus))
+		s.maybePostAsyncNotification(ctx, op)
+	}
+}
+
+// pollBreakGlassCredentialRevoke updates the status of a credential revocation operation.
+func (s *OperationsScanner) pollBreakGlassCredentialRevoke(ctx context.Context, op operation) {
+	var opStatus arm.ProvisioningState = arm.ProvisioningStateSucceeded
+	var opError *arm.CloudErrorBody
+
+	// XXX Error handling here is tricky. Since the operation applies to multiple
+	//     Cluster Service objects, we can find a mix of successes and failures.
+	//     And with only a Failed status for each object, it's difficult to make
+	//     intelligent decisions like whether to retry. This is just to say the
+	//     error handling policy here may need revising once Cluster Service
+	//     offers more detail to accompany BreakGlassCredentialStatusFailed.
+
+	iterator := s.clusterService.ListBreakGlassCredentials(op.doc.InternalID, "")
+
+loop:
+	for breakGlassCredential := range iterator.Items(ctx) {
+		// An expired credential is as good as a revoked credential
+		// for this operation, regardless of the credential status.
+		if breakGlassCredential.ExpirationTimestamp().After(time.Now()) {
+			switch status := breakGlassCredential.Status(); status {
+			case cmv1.BreakGlassCredentialStatusAwaitingRevocation:
+				opStatus = arm.ProvisioningStateDeleting
+				// break alone just breaks out of select.
+				// Use a label to break out of the loop.
+				break loop
+			case cmv1.BreakGlassCredentialStatusRevoked:
+				// maintain ProvisioningStateSucceeded
+			case cmv1.BreakGlassCredentialStatusFailed:
+				// XXX Cluster Service does not provide a reason for the failure,
+				//     so we have no choice but to use a generic error message.
+				opStatus = arm.ProvisioningStateFailed
+				opError = &arm.CloudErrorBody{
+					Code:    arm.CloudErrorCodeInternalServerError,
+					Message: "Failed to revoke cluster credential",
+				}
+				// break alone just breaks out of select.
+				// Use a label to break out of the loop.
+				break loop
+			default:
+				op.logger.Error(fmt.Sprintf("Unhandled BreakGlassCredentialStatus '%s'", status))
+			}
+		}
+	}
+
+	err := iterator.GetError()
+	if err != nil {
+		op.logger.Error(fmt.Sprintf("Error while paging through Cluster Service query results: %v", err.Error()))
+		return
+	}
+
+	updated, err := s.dbClient.UpdateOperationDoc(ctx, op.pk, op.id, func(updateDoc *database.OperationDocument) bool {
+		return updateDoc.UpdateStatus(opStatus, opError)
+	})
+	if err != nil {
+		op.logger.Error(fmt.Sprintf("Failed to update operation status: %v", err))
+	}
+	if updated {
+		op.logger.Info(fmt.Sprintf("Updated status to '%s'", opStatus))
+		s.maybePostAsyncNotification(ctx, op)
 	}
 }
 
@@ -496,7 +632,7 @@ func (s *OperationsScanner) postAsyncNotification(ctx context.Context, op operat
 		return err
 	}
 
-	data, err := arm.Marshal(doc.ToStatus())
+	data, err := arm.MarshalJSON(doc.ToStatus())
 	if err != nil {
 		return err
 	}
@@ -529,10 +665,6 @@ func convertClusterStatus(clusterStatus *arohcpv1alpha1.ClusterStatus, current a
 	var opError *arm.CloudErrorBody
 	var err error
 
-	// FIXME This logic is all tenative until the new "/api/aro_hcp/v1" OCM
-	//       API is available. What's here now is a best guess at converting
-	//       ClusterStatus from the "/api/clusters_mgmt/v1" API.
-
 	switch state := clusterStatus.State(); state {
 	case arohcpv1alpha1.ClusterStateError:
 		opStatus = arm.ProvisioningStateFailed
@@ -563,6 +695,43 @@ func convertClusterStatus(clusterStatus *arohcpv1alpha1.ClusterStatus, current a
 		}
 	default:
 		err = fmt.Errorf("Unhandled ClusterState '%s'", state)
+	}
+
+	return opStatus, opError, err
+}
+
+// convertNodePoolStatus attempts to translate a NodePoolStatus object
+// from Cluster Service into an ARM provisioning state and, if necessary,
+// a structured OData error.
+func convertNodePoolStatus(nodePoolStatus *arohcpv1alpha1.NodePoolStatus, current arm.ProvisioningState) (arm.ProvisioningState, *arm.CloudErrorBody, error) {
+	var opStatus arm.ProvisioningState = current
+	var opError *arm.CloudErrorBody
+	var err error
+
+	switch state := NodePoolStateValue(nodePoolStatus.State().NodePoolStateValue()); state {
+	case NodePoolStateValidating, NodePoolStatePending, NodePoolStateValidatingUpdate, NodePoolStatePendingUpdate:
+		// These are valid node pool states for ARO-HCP but there are
+		// no unique ProvisioningState values for them. They should
+		// only occur when ProvisioningState is Accepted.
+		if current != arm.ProvisioningStateAccepted {
+			err = fmt.Errorf("Got NodePoolStatusValue '%s' while ProvisioningState was '%s' instead of '%s'", state, current, arm.ProvisioningStateAccepted)
+		}
+	case NodePoolStateInstalling:
+		opStatus = arm.ProvisioningStateProvisioning
+	case NodePoolStateReady:
+		opStatus = arm.ProvisioningStateSucceeded
+	case NodePoolStateUpdating:
+		opStatus = arm.ProvisioningStateUpdating
+	case NodePoolStateUninstalling:
+		opStatus = arm.ProvisioningStateDeleting
+	case NodePoolStateRecoverableError, NodePoolStateError:
+		// XXX OCM SDK offers no error code or message for failed node pool
+		//     operations so "Internal Server Error" is all we can do for now.
+		//     https://issues.redhat.com/browse/ARO-14969
+		opStatus = arm.ProvisioningStateFailed
+		opError = arm.NewInternalServerError().CloudErrorBody
+	default:
+		err = fmt.Errorf("Unhandled NodePoolState '%s'", state)
 	}
 
 	return opStatus, opError, err

@@ -139,6 +139,15 @@ type HcpOpenShiftCluster struct {
 	Type *string
 }
 
+// HcpOpenShiftClusterAdminCredential - HCP cluster admin credential
+type HcpOpenShiftClusterAdminCredential struct {
+	// READ-ONLY; Expiration timestamp for the kubeconfig's client certificate
+	ExpirationTimestamp *time.Time
+
+	// READ-ONLY; Admin kubeconfig with a temporary client certificate
+	Kubeconfig *string
+}
+
 // HcpOpenShiftClusterListResult - The response of a HcpOpenShiftCluster list operation.
 type HcpOpenShiftClusterListResult struct {
 	// REQUIRED; The HcpOpenShiftCluster items on this page
@@ -150,17 +159,14 @@ type HcpOpenShiftClusterListResult struct {
 
 // HcpOpenShiftClusterProperties - HCP cluster properties
 type HcpOpenShiftClusterProperties struct {
-	// REQUIRED; Version of the control plane components
-	Version *VersionProfile
-
-	// Cluster DNS configuration
-	DNS *DNSProfile
-
-	// READ-ONLY; Shows the cluster web console information
-	Console *ConsoleProfile
+	// REQUIRED; Azure platform configuration
+	Platform *PlatformProfile
 
 	// Configure cluter capabilities.
 	Capabilities *ClusterCapabilitiesProfile
+
+	// Cluster DNS configuration
+	DNS *DNSProfile
 
 	// Disable user workload monitoring
 	DisableUserWorkloadMonitoring *bool
@@ -168,11 +174,14 @@ type HcpOpenShiftClusterProperties struct {
 	// Cluster network configuration
 	Network *NetworkProfile
 
-	// Azure platform configuration
-	Platform *PlatformProfile
+	// Version of the control plane components
+	Version *VersionProfile
 
 	// READ-ONLY; Shows the cluster API server profile
 	API *APIProfile
+
+	// READ-ONLY; Shows the cluster web console information
+	Console *ConsoleProfile
 
 	// READ-ONLY; The status of the last operation.
 	ProvisioningState *ProvisioningState
@@ -329,9 +338,6 @@ type NodePoolProperties struct {
 	// REQUIRED; Azure node pool platform configuration
 	Platform *NodePoolPlatformProfile
 
-	// REQUIRED; OpenShift version for the nodepool
-	Version *NodePoolVersionProfile
-
 	// Auto-repair
 	AutoRepair *bool
 
@@ -346,6 +352,9 @@ type NodePoolProperties struct {
 
 	// Taints for the nodes
 	Taints []*Taint
+
+	// OpenShift version for the nodepool
+	Version *NodePoolVersionProfile
 
 	// READ-ONLY; Provisioning state
 	ProvisioningState *ProvisioningState

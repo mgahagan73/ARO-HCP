@@ -22,7 +22,7 @@
   "aroDevopsMsiId": "/subscriptions/9a53d80e-dae0-4c8a-af90-30575d253127/resourceGroups/global-shared-resources/providers/Microsoft.ManagedIdentity/userAssignedIdentities/global-ev2-identity",
   "backend": {
     "image": {
-      "digest": "sha256:d7365c2638febc9d008e5246c8829fb51e866a54519d84fb4f077c8e7f4eb79c",
+      "digest": "sha256:a2953aef23ac3dc376485fafefdbb2d949aebb11f6f9029bcae836bab929d5c3",
       "registry": "arohcpsvcdev.azurecr.io",
       "repository": "arohcpbackend"
     }
@@ -109,7 +109,7 @@
       "zoneRedundantMode": "Auto"
     },
     "image": {
-      "digest": "sha256:343bb768e38a829f13c4893e381c83fa602944809509b64e841f317ec2bf539b",
+      "digest": "sha256:e9f39492701b13b90a554374156bb4c73654f2bc849bea98132be40cae948364",
       "registry": "arohcpsvcdev.azurecr.io",
       "repository": "arohcpfrontend"
     }
@@ -131,9 +131,9 @@
     "subscription": "hcp-global"
   },
   "hypershift": {
-    "additionalInstallArg": "--tech-preview-no-upgrade",
+    "additionalInstallArg": "",
     "image": {
-      "digest": "sha256:305f45bf036f84255d41c20517c70a9cb18af3dcdfa71a82a5716dde77c9e2c3",
+      "digest": "sha256:0e6706e3bbc058a65f34dad7ccf048e56b1f32ca610c6f39f085ddb8bb1169ef",
       "registry": "quay.io",
       "repository": "acm-d/rhtap-hypershift-operator"
     },
@@ -155,7 +155,7 @@
     "ocMirror": {
       "enabled": true,
       "image": {
-        "digest": "sha256:82b42792660e6024b0721f80b920421ac62a451c3b3677175dad289d1400f032",
+        "digest": "sha256:6016058b113d0dd61fce42747cc4cf6b0d47bbe260892a9825d24d19b6834ef4",
         "registry": "arohcpsvcdev.azurecr.io",
         "repository": "image-sync/oc-mirror"
       },
@@ -259,7 +259,7 @@
     "applyKubeletFixes": true,
     "logs": {
       "configVersion": "1.0",
-      "namespace": "HCPManagementLogs",
+      "namespace": "HCPCustomerLogs",
       "san": "MGMT.GENEVA.KEYVAULT.ARO-HCP-STG.AZURE.COM"
     },
     "rg": "hcp-underlay-westus3-mgmt-1",
@@ -274,16 +274,15 @@
   "miMockClientId": "",
   "miMockPrincipalId": "",
   "mise": {
-    "armInstance": "https://management.core.windows.net/",
-    "azureAdClientId": "",
+    "armAppId": "e2c2ff5c-e5b4-4e79-8c3e-1da8c48461e7",
+    "armInstance": "https://management.azure.com",
     "azureAdInstance": "https://login.microsoftonline.com/",
     "deploy": true,
+    "firstPartyAppId": "7f4a113a-c61d-412a-bea1-85dee5baf4a8",
     "image": {
-      "digest": "sha256:ad3f7efeeb6691c25bf31d46d7b879e06093ec2ff43c05ad32b5bc5315ab96a7",
+      "digest": "sha256:d56506305ea64f368c920e5e4bce6ee44415d4133559a548b82a81bbd1828f9b",
       "repository": "mise"
-    },
-    "validAppId0": "",
-    "validAppId1": ""
+    }
   },
   "monitoring": {
     "grafanaAdminGroupPrincipalId": "",
