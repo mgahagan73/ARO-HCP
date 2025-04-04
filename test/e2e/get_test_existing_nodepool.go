@@ -23,11 +23,11 @@ var _ = Describe("Nodepool operation", func() {
 
 	var (
 		nodePoolName    = os.Getenv("NP_NAME")
+		clusterName     = os.Getenv("CLUSTER_NAME")
 		nodePoolOptions *api.NodePoolsClientListByParentOptions
 	)
 
 	It("Get nodepool from cluster", labels.Medium, labels.Positive, func(ctx context.Context) {
-		clusterName := os.Getenv("CLUSTER_NAME")
 		By("Send get request for nodepool")
 		nodePool, err := NodePoolsClient.Get(ctx, customerRGName, clusterName, nodePoolName, (*api.NodePoolsClientGetOptions)(nodePoolOptions))
 		Expect(err).To(BeNil())
