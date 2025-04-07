@@ -34,7 +34,6 @@ var _ = Describe("Nodepool operation", func() {
 		Expect(nodePool).ToNot(BeNil())
 		By("Check to see nodepool exists and is successfully provisioned")
 		Expect(string(*nodePool.Name)).To(Equal(nodePoolName))
-		// We should have ProvisioningState = Succeeded here but that has not been implemented so we currently have to go with Accepted
-		Expect(string(*nodePool.Properties.ProvisioningState)).To(Equal("Accepted"))
+		Expect(string(*nodePool.Properties.ProvisioningState)).To(Equal("Succeeded"))
 	})
 })
