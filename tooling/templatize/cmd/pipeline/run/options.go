@@ -6,8 +6,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/Azure/ARO-Tools/pkg/config"
+
 	"github.com/Azure/ARO-HCP/tooling/templatize/cmd/pipeline/options"
-	"github.com/Azure/ARO-HCP/tooling/templatize/pkg/config"
 	"github.com/Azure/ARO-HCP/tooling/templatize/pkg/pipeline"
 )
 
@@ -104,7 +105,7 @@ func (o *RunOptions) RunPipeline(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return pipeline.RunPipeline(o.PipelineOptions.Pipeline, ctx, &pipeline.PipelineRunOptions{
+	_, err = pipeline.RunPipeline(o.PipelineOptions.Pipeline, ctx, &pipeline.PipelineRunOptions{
 		DryRun:                   o.DryRun,
 		Vars:                     variables,
 		Region:                   rolloutOptions.Region,
@@ -113,4 +114,5 @@ func (o *RunOptions) RunPipeline(ctx context.Context) error {
 		NoPersist:                o.NoPersist,
 		DeploymentTimeoutSeconds: o.DeploymentTimeoutSeconds,
 	})
+	return err
 }

@@ -6,7 +6,7 @@ import (
 
 	"gotest.tools/v3/assert"
 
-	"github.com/Azure/ARO-HCP/tooling/templatize/pkg/config"
+	"github.com/Azure/ARO-Tools/pkg/config"
 )
 
 func TestStepRun(t *testing.T) {
@@ -89,7 +89,7 @@ func TestPipelineRun(t *testing.T) {
 		},
 	}
 
-	err := RunPipeline(pipeline, context.Background(), &PipelineRunOptions{
+	_, err := RunPipeline(pipeline, context.Background(), &PipelineRunOptions{
 		SubsciptionLookupFunc: func(_ context.Context, _ string) (string, error) {
 			return "test", nil
 		},
@@ -228,7 +228,7 @@ func TestAddInputVars(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := getInputValues(tc.stepVariables, tc.cfg, tc.input, false)
+			result, err := getInputValues(tc.stepVariables, tc.cfg, tc.input)
 			t.Log(result)
 			if tc.err != "" {
 				assert.Error(t, err, tc.err)

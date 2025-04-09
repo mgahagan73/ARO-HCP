@@ -6,8 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/ARO-Tools/pkg/config"
+
 	"github.com/Azure/ARO-HCP/tooling/templatize/pkg/azauth"
-	"github.com/Azure/ARO-HCP/tooling/templatize/pkg/config"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -173,7 +174,7 @@ func pollAndPrint[T any](ctx context.Context, p *runtime.Poller[T]) error {
 func doDryRun(ctx context.Context, client *armresources.DeploymentsClient, rgName string, step *ARMStep, vars config.Variables, input map[string]output) (output, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
-	inputValues, err := getInputValues(step.Variables, vars, input, false)
+	inputValues, err := getInputValues(step.Variables, vars, input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get input values: %w", err)
 	}
@@ -247,7 +248,7 @@ func pollAndGetOutput[T any](ctx context.Context, p *runtime.Poller[T]) (armOutp
 func doWaitForDeployment(ctx context.Context, client *armresources.DeploymentsClient, rgName string, step *ARMStep, vars config.Variables, input map[string]output) (output, error) {
 	logger := logr.FromContextOrDiscard(ctx)
 
-	inputValues, err := getInputValues(step.Variables, vars, input, false)
+	inputValues, err := getInputValues(step.Variables, vars, input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get input values: %w", err)
 	}
@@ -273,7 +274,7 @@ func doWaitForDeployment(ctx context.Context, client *armresources.DeploymentsCl
 		if err != nil {
 			return nil, fmt.Errorf("failed to create deployment: %w", err)
 		}
-		logger.Info("Deployment started", "deployment", step.Name)
+		logger.V(1).Info("Deployment started", "deployment", step.Name)
 
 		return pollAndGetOutput(ctx, poller)
 	} else {
@@ -281,7 +282,7 @@ func doWaitForDeployment(ctx context.Context, client *armresources.DeploymentsCl
 		if err != nil {
 			return nil, fmt.Errorf("failed to create deployment: %w", err)
 		}
-		logger.Info("Deployment started", "deployment", step.Name)
+		logger.V(1).Info("Deployment started", "deployment", step.Name)
 
 		return pollAndGetOutput(ctx, poller)
 	}
@@ -289,16 +290,15 @@ func doWaitForDeployment(ctx context.Context, client *armresources.DeploymentsCl
 
 func (a *armClient) ensureResourceGroupExists(ctx context.Context, rgName string, rgNoPersist bool) error {
 	// Check if the resource group exists
-	// todo fill tags properly
-	tags := map[string]*string{}
-
-	if !rgNoPersist {
-		// if no-persist is set, don't set the persist tag, needs double negotiate, cause default should be true
-		tags["persist"] = to.Ptr("true")
-	}
-	_, err := a.resourceGroupClient.Get(ctx, rgName, nil)
+	// Once the persist tag is set to true, it should not be removed by automation... tooo dangerous
+	rg, err := a.resourceGroupClient.Get(ctx, rgName, nil)
 	if err != nil {
 		// Create the resource group
+		tags := map[string]*string{}
+		if !rgNoPersist {
+			// if no-persist is set, don't set the persist tag, needs double negotiate, cause default should be true
+			tags["persist"] = to.Ptr("true")
+		}
 		resourceGroup := armresources.ResourceGroup{
 			Location: to.Ptr(a.Region),
 			Tags:     tags,
@@ -308,6 +308,14 @@ func (a *armClient) ensureResourceGroupExists(ctx context.Context, rgName string
 			return fmt.Errorf("failed to create resource group: %w", err)
 		}
 	} else {
+		tags := rg.Tags
+		if tags == nil {
+			tags = map[string]*string{}
+		}
+		if !rgNoPersist {
+			// if no-persist is set, don't set the persist tag, needs double negotiate, cause default should be true
+			tags["persist"] = to.Ptr("true")
+		}
 		patchResourceGroup := armresources.ResourceGroupPatchable{
 			Tags: tags,
 		}
