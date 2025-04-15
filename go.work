@@ -13,5 +13,4 @@ use (
 	./tooling/secret-sync
 	./tooling/templatize
 	tooling/prometheus-rules
-	./test
 )

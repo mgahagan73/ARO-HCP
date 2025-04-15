@@ -27,7 +27,7 @@ var _ = Describe("Nodepool operation", func() {
 		nodePoolOptions *api.NodePoolsClientListByParentOptions
 	)
 
-	It("Get nodepool from cluster", labels.Medium, labels.Positive, func(ctx context.Context) {
+	It("Get nodepool from cluster", labels.Medium, func(ctx context.Context) {
 		By("Send get request for nodepool")
 		nodePool, err := NodePoolsClient.Get(ctx, customerRGName, clusterName, nodePoolName, (*api.NodePoolsClientGetOptions)(nodePoolOptions))
 		Expect(err).To(BeNil())
