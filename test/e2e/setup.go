@@ -4,11 +4,12 @@ import (
 	"context"
 	"os"
 
-	api "github.com/Azure/ARO-HCP/internal/api/v20240610preview/generated"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+
+	api "github.com/Azure/ARO-HCP/internal/api/v20240610preview/generated"
 )
 
 var (
