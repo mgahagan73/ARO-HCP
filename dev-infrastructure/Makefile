@@ -360,17 +360,10 @@ local-cs-permissions: svc.dev.permissions mgmt.dev.permissions
 .PHONY: local-cs-permissions
 
 #
-# Generated Prometheus Rules
-#
-modules/metrics/rules/generatedPrometheusAlertingRules.bicep:
-	$(MAKE) -C ./../tooling/prometheus-rules/ prometheus-rules
-	./../tooling/prometheus-rules/prometheus-rules --input-rules ./../tooling/prometheus-rules/kubernetesControlPlane-prometheusRule.yaml --output-bicep $@
-
-#
 # Automation Account creation
 #
 automation-account:
-	az group create -g ${AUTOMATION_ACCOUNT_RG} -l eastus && \
+	az group create -g ${AUTOMATION_ACCOUNT_RG} -l eastus --tags persist=true && \
 	az deployment group create \
 		--name dev-automation-account \
 		--resource-group $(AUTOMATION_ACCOUNT_RG) \
@@ -387,4 +380,4 @@ automation-account.what-if:
 		--template-file templates/dev-automation-account.bicep \
 		--parameters \
 			configurations/dev-automation-account.bicepparam
-.PHONY: automation-account.what-if 
+.PHONY: automation-account.what-if
