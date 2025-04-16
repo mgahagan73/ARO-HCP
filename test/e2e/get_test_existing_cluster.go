@@ -24,9 +24,7 @@ var _ = Describe("Cluster login operation", func() {
 	})
 
 	clusterName := os.Getenv("CLUSTER_NAME")
-	//kubeadminPassword := os.Getenv("KUBEADMIN_PASSWORD")
 	clusterKubeconfig := os.Getenv("CLUSTER_KUBECONFIG")
-	//clusterApiUrl := ""
 
 	It("Confirm cluster has been created successfully", labels.Medium, func(ctx context.Context) {
 		By("Checking Provisioning state with RP")
@@ -34,21 +32,6 @@ var _ = Describe("Cluster login operation", func() {
 		Expect(err).To(BeNil())
 		Expect(string(*out.Properties.ProvisioningState)).To(Equal(("Succeeded")))
 	})
-	/* It("Log in to existing cluster with kubeadmin password", labels.Medium, func(ctx context.Context) {
-		By("Get cluster api URL from RP")
-		Expect(kubeadminPassword).ToNot(BeNil())
-		out, err := clustersClient.Get(ctx, customerRGName, clusterName, nil)
-		Expect(err).To(BeNil())
-		clusterApiUrl = string(*out.Properties.API.URL)
-		Expect(clusterApiUrl).To(ContainSubstring("https://"))
-		By("Log in with oc command")
-		//oc_command := fmt.Sprintf("oc login -u kubeadmin -p " + kubeadminPassword + " " + clusterApiUrl)
-		oc_command := "oc --insecure-skip-tls-verify login -u kubeadmin -p " + kubeadminPassword + " " + clusterApiUrl
-		stdout, stderr, err := cmdline.RunCMD(oc_command)
-		Expect(err).To(BeNil())
-		Expect(stderr).ToNot(ContainSubstring("error"))
-		Expect(stdout).To(ContainSubstring("Login successful."))
-	}) */
 	It("Can access cluster with oc command using kubeconfig file", labels.Medium, func(ctx context.Context) {
 		Expect(clusterKubeconfig).ToNot(BeNil())
 		By("Get projects on cluster")
