@@ -170,7 +170,7 @@
     "ocMirror": {
       "enabled": true,
       "image": {
-        "digest": "sha256:6016058b113d0dd61fce42747cc4cf6b0d47bbe260892a9825d24d19b6834ef4",
+        "digest": "sha256:92dc2b18de0126caa2212f62c54023f6e8ecf12e2025c37a5f4151d0253ae14e",
         "registry": "arohcpsvcdev.azurecr.io",
         "repository": "image-sync/oc-mirror"
       },
@@ -215,7 +215,7 @@
       "private": false
     },
     "image": {
-      "digest": "sha256:223f332a11d336b49243d886217a76809142b30f9ab8ef27bec80a4458b3c3a5",
+      "digest": "sha256:f64ad21dcbe40ed7d29aff7d2d7320c0a5ee18c6bfabfef9486550a96ff27141",
       "registry": "quay.io",
       "repository": "redhat-user-workloads/maestro-rhtap-tenant/maestro/maestro"
     },
@@ -248,6 +248,7 @@
   "mgmt": {
     "aks": {
       "clusterOutboundIPAddressIPTags": "",
+      "enableSwiftV2": false,
       "etcd": {
         "kvName": "arohcp-etcd-nightly-1",
         "kvSoftDelete": false

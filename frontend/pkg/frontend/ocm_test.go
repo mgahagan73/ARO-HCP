@@ -1,3 +1,17 @@
+// Copyright 2025 Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package frontend
 
 import (
@@ -20,9 +34,6 @@ import (
 	"github.com/Azure/ARO-HCP/internal/api/arm"
 )
 
-// Copyright (c) Microsoft Corporation.
-// Licensed under the Apache License 2.0.
-
 func TestRequestIDPropagator(t *testing.T) {
 	const testRequestID = "00000000-0000-0000-0000-000000000000"
 
@@ -36,41 +47,29 @@ func TestRequestIDPropagator(t *testing.T) {
 
 		ctx := context.Background()
 		r, err := http.NewRequestWithContext(ctx, http.MethodGet, ts.URL, nil)
-		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
-		}
+		require.NoError(t, err)
 		correlationData := arm.NewCorrelationData(r)
 		correlationData.RequestID = uuid.MustParse(testRequestID)
 		r = r.WithContext(ContextWithCorrelationData(ctx, correlationData))
 
 		rs, err := c.Do(r)
-		if err != nil {
-			t.Fatalf("unexpected error from server: %s", err)
-		}
+		require.NoError(t, err)
 
-		if rs.StatusCode != http.StatusOK {
-			t.Fatalf("unexpected status code: %d", rs.StatusCode)
-		}
+		require.Equal(t, http.StatusOK, rs.StatusCode)
 
 		b, err := io.ReadAll(rs.Body)
-		if err != nil {
-			t.Fatalf("unexpected error reading response: %s", err)
-		}
+		require.NoError(t, err)
 
 		return string(b)
 	}
 
 	// Without the transport wrapper, the request ID isn't echoed.
 	c := ts.Client()
-	if ret := do(c); ret != "" {
-		t.Fatalf("expecting an empty response, got %q", ret)
-	}
+	assert.Empty(t, do(c))
 
 	// With the transport wrapper, the request ID is echoed.
 	c.Transport = RequestIDPropagator(c.Transport)
-	if ret := do(c); ret != testRequestID {
-		t.Fatalf("expecting %q, got %q", testRequestID, ret)
-	}
+	assert.Equal(t, testRequestID, do(c))
 }
 
 func TestConvertCStoHCPOpenShiftCluster(t *testing.T) {
@@ -187,7 +186,7 @@ func TestWithImmutableAttributes(t *testing.T) {
 }
 
 func testResourceID(t *testing.T) *azcorearm.ResourceID {
-	resourceID, err := azcorearm.ParseResourceID("/subscriptions/test/resourceGroups/test/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/test")
+	resourceID, err := azcorearm.ParseResourceID(api.TestClusterResourceID)
 	require.NoError(t, err)
 	return resourceID
 }
@@ -196,9 +195,9 @@ func clusterResource(opts ...func(*api.HCPOpenShiftCluster)) *api.HCPOpenShiftCl
 	c := &api.HCPOpenShiftCluster{
 		TrackedResource: arm.TrackedResource{
 			Resource: arm.Resource{
-				ID:   "/subscriptions/test/resourceGroups/test/providers/Microsoft.RedHatOpenShift/hcpOpenShiftClusters/test",
-				Name: "test",
-				Type: "Microsoft.RedHatOpenShift/hcpOpenShiftClusters",
+				ID:   api.TestClusterResourceID,
+				Name: api.TestClusterName,
+				Type: api.ClusterResourceType.String(),
 			},
 		},
 		Properties: api.HCPOpenShiftClusterProperties{},

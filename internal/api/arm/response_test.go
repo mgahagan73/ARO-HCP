@@ -1,7 +1,18 @@
-package arm
+// Copyright 2025 Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// Copyright (c) Microsoft Corporation.
-// Licensed under the Apache License 2.0.
+package arm
 
 import (
 	"io"
@@ -9,15 +20,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWriteJSONResponse(t *testing.T) {
 	resourceStruct := &TrackedResource{
 		Resource: Resource{
 			ID:   "00000000-0000-0000-0000-000000000000",
-			Name: "testCluster",
-			Type: "Microsoft.RedHatOpenShift/hcpOpenShiftClusters",
+			Name: "testVM",
+			Type: "Microsoft.Compute/virtualMachines",
 		},
 		Location: "eastus1",
 		Tags: map[string]string{
@@ -27,9 +39,7 @@ func TestWriteJSONResponse(t *testing.T) {
 	}
 
 	resourceBytes, err := MarshalJSON(resourceStruct)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	tests := []struct {
 		name       string
@@ -53,35 +63,24 @@ func TestWriteJSONResponse(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
 			_, err := WriteJSONResponse(recorder, tt.statusCode, tt.body)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 
 			result := recorder.Result()
 
-			if result.StatusCode != tt.statusCode {
-				t.Errorf("Got status code %d, expected %d", result.StatusCode, tt.statusCode)
-			}
+			assert.Equal(t, tt.statusCode, result.StatusCode)
 
 			contentType := result.Header.Get("Content-Type")
-			if contentType == "" {
-				t.Errorf("Response is missing a Content-Type header")
-			} else if contentType != "application/json" {
-				t.Errorf("Got Content-Type %s, expected application/json", contentType)
+			if assert.NotEmpty(t, contentType, "Response is missing a Content-Type header") {
+				assert.Equal(t, "application/json", contentType)
 			}
 
 			expectBody, err := MarshalJSON(resourceStruct)
-			if err != nil {
-				t.Fatal(err)
-			}
-			actualBody, err := io.ReadAll(result.Body)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if string(actualBody) != string(expectBody) {
-				t.Error("Response body had unexpected variations:\n" + cmp.Diff(string(expectBody), string(actualBody)))
-			}
+			require.NoError(t, err)
 
+			actualBody, err := io.ReadAll(result.Body)
+			require.NoError(t, err)
+
+			assert.Equal(t, string(expectBody), string(actualBody))
 		})
 	}
 }

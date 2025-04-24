@@ -1,21 +1,33 @@
-package frontend
+// Copyright 2025 Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// Copyright (c) Microsoft Corporation.
-// Licensed under the Apache License 2.0.
+package frontend
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMiddlewareLowercase(t *testing.T) {
 	writer := httptest.NewRecorder()
 
 	request, err := http.NewRequest(http.MethodGet, "/TEST", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	next := func(w http.ResponseWriter, r *http.Request) {
 		request = r // capture modified request
@@ -23,15 +35,10 @@ func TestMiddlewareLowercase(t *testing.T) {
 
 	MiddlewareLowercase(writer, request, next)
 
-	if request.URL.Path != "/test" {
-		t.Error(request.URL.Path)
-	}
+	assert.Equal(t, "/test", request.URL.Path)
 
 	originalPath, err := OriginalPathFromContext(request.Context())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if originalPath != "/TEST" {
-		t.Error(originalPath)
+	if assert.NoError(t, err) {
+		assert.Equal(t, "/TEST", originalPath)
 	}
 }

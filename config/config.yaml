@@ -79,6 +79,7 @@ defaults:
         kvName: arohcp-etcd-{{ .ctx.regionShort }}-{{ .ctx.stamp }}
         kvSoftDelete: true
       clusterOutboundIPAddressIPTags: ""
+      enableSwiftV2: false
   # Frontend
   frontend:
     tracing:
@@ -180,7 +181,7 @@ defaults:
       image:
         registry: arohcpsvcdev.azurecr.io
         repository: image-sync/oc-mirror
-        digest: sha256:6016058b113d0dd61fce42747cc4cf6b0d47bbe260892a9825d24d19b6834ef4
+        digest: sha256:92dc2b18de0126caa2212f62c54023f6e8ecf12e2025c37a5f4151d0253ae14e
       pullSecretName: ocmirror-pull-secret
   # MCE
   mce:
@@ -234,7 +235,7 @@ clouds:
       # Maestro
       maestro:
         image:
-          digest: sha256:223f332a11d336b49243d886217a76809142b30f9ab8ef27bec80a4458b3c3a5
+          digest: sha256:f64ad21dcbe40ed7d29aff7d2d7320c0a5ee18c6bfabfef9486550a96ff27141
       # Cluster Service
       clusterService:
         image:
@@ -463,7 +464,7 @@ clouds:
             postgres:
               deploy: false
             tracing:
-              address: "http://jaeger.observability"
+              address: "http://ingest.observability:4318"
               exporter: "otlp"
           # DNS
           dns:
@@ -480,11 +481,17 @@ clouds:
               private: false
               zoneRedundantMode: 'Disabled'
             tracing:
-              address: "http://jaeger.observability"
+              address: "http://ingest.observability:4318"
               exporter: "otlp"
           # MC
           mgmt:
+            jaeger:
+              deploy: false
             applyKubeletFixes: false
+          # SVC
+          svc:
+            jaeger:
+              deploy: true
       personal-perfscale:
         defaults:
           dns:

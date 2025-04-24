@@ -1,7 +1,18 @@
-package frontend
+// Copyright 2025 Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// Copyright (c) Microsoft Corporation.
-// Licensed under the Apache License 2.0.
+package frontend
 
 import (
 	"context"
@@ -12,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
@@ -28,8 +40,8 @@ func TestMiddlewareResourceID(t *testing.T) {
 			name: "subscription resource",
 			path: "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000",
 			resourceTypes: []string{
-				"Microsoft.Resources/subscriptions",
-				"Microsoft.Resources/tenants",
+				azcorearm.SubscriptionResourceType.String(),
+				azcorearm.TenantResourceType.String(),
 			},
 		},
 		{
@@ -37,9 +49,9 @@ func TestMiddlewareResourceID(t *testing.T) {
 			path: "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/MyResourceGroup/PROVIDERS/MICROSOFT.REDHATOPENSHIFT/HCPOPENSHIFTCLUSTERS/myCluster",
 			resourceTypes: []string{
 				"MICROSOFT.REDHATOPENSHIFT/HCPOPENSHIFTCLUSTERS",
-				"Microsoft.Resources/resourceGroups",
-				"Microsoft.Resources/subscriptions",
-				"Microsoft.Resources/tenants",
+				azcorearm.ResourceGroupResourceType.String(),
+				azcorearm.SubscriptionResourceType.String(),
+				azcorearm.TenantResourceType.String(),
 			},
 		},
 		{
@@ -49,9 +61,9 @@ func TestMiddlewareResourceID(t *testing.T) {
 			resourceTypes: []string{
 				"MICROSOFT.REDHATOPENSHIFT/HCPOPENSHIFTCLUSTERS/myAction",
 				"MICROSOFT.REDHATOPENSHIFT/HCPOPENSHIFTCLUSTERS",
-				"Microsoft.Resources/resourceGroups",
-				"Microsoft.Resources/subscriptions",
-				"Microsoft.Resources/tenants",
+				azcorearm.ResourceGroupResourceType.String(),
+				azcorearm.SubscriptionResourceType.String(),
+				azcorearm.TenantResourceType.String(),
 			},
 		},
 		{
@@ -60,9 +72,9 @@ func TestMiddlewareResourceID(t *testing.T) {
 			resourceTypes: []string{
 				"MICROSOFT.REDHATOPENSHIFT/HCPOPENSHIFTCLUSTERS/NODEPOOLS",
 				"MICROSOFT.REDHATOPENSHIFT/HCPOPENSHIFTCLUSTERS",
-				"Microsoft.Resources/resourceGroups",
-				"Microsoft.Resources/subscriptions",
-				"Microsoft.Resources/tenants",
+				azcorearm.ResourceGroupResourceType.String(),
+				azcorearm.SubscriptionResourceType.String(),
+				azcorearm.TenantResourceType.String(),
 			},
 		},
 		{
@@ -71,9 +83,9 @@ func TestMiddlewareResourceID(t *testing.T) {
 			resourceTypes: []string{
 				"MICROSOFT.REDHATOPENSHIFT/HCPOPENSHIFTCLUSTERS/NODEPOOLS",
 				"MICROSOFT.REDHATOPENSHIFT/HCPOPENSHIFTCLUSTERS",
-				"Microsoft.Resources/resourceGroups",
-				"Microsoft.Resources/subscriptions",
-				"Microsoft.Resources/tenants",
+				azcorearm.ResourceGroupResourceType.String(),
+				azcorearm.SubscriptionResourceType.String(),
+				azcorearm.TenantResourceType.String(),
 			},
 		},
 		{
@@ -81,9 +93,9 @@ func TestMiddlewareResourceID(t *testing.T) {
 			path: "/SUBSCRIPTIONS/00000000-0000-0000-0000-000000000000/RESOURCEGROUPS/MyResourceGroup/PROVIDERS/MICROSOFT.REDHATOPENSHIFT/DEPLOYMENTS/preflight",
 			resourceTypes: []string{
 				"MICROSOFT.REDHATOPENSHIFT/DEPLOYMENTS",
-				"Microsoft.Resources/resourceGroups",
-				"Microsoft.Resources/subscriptions",
-				"Microsoft.Resources/tenants",
+				azcorearm.ResourceGroupResourceType.String(),
+				azcorearm.SubscriptionResourceType.String(),
+				azcorearm.TenantResourceType.String(),
 			},
 		},
 		{
@@ -92,8 +104,8 @@ func TestMiddlewareResourceID(t *testing.T) {
 			resourceTypes: []string{
 				"MICROSOFT.REDHATOPENSHIFT/LOCATIONS/HCPOPERATIONSSTATUS",
 				"MICROSOFT.REDHATOPENSHIFT/LOCATIONS",
-				"Microsoft.Resources/subscriptions",
-				"Microsoft.Resources/tenants",
+				azcorearm.SubscriptionResourceType.String(),
+				azcorearm.TenantResourceType.String(),
 			},
 		},
 		{

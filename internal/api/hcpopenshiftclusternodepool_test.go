@@ -1,30 +1,25 @@
-package api
+// Copyright 2025 Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// Copyright (c) Microsoft Corporation.
-// Licensed under the Apache License 2.0.
+package api
 
 import (
 	"net/http"
 	"testing"
 
-	"dario.cat/mergo"
-
 	"github.com/Azure/ARO-HCP/internal/api/arm"
 )
-
-func minimumValidNodePool() *HCPOpenShiftClusterNodePool {
-	// Values are meaningless but need to pass validation.
-	return &HCPOpenShiftClusterNodePool{
-		Properties: HCPOpenShiftClusterNodePoolProperties{
-			Version: NodePoolVersionProfile{
-				ChannelGroup: "stable",
-			},
-			Platform: NodePoolPlatformProfile{
-				VMSize: "Standard_D8s_v3",
-			},
-		},
-	}
-}
 
 func TestNodePoolRequiredForPut(t *testing.T) {
 	tests := []struct {
@@ -54,12 +49,11 @@ func TestNodePoolRequiredForPut(t *testing.T) {
 		},
 		{
 			name:     "Minimum valid node pool",
-			resource: minimumValidNodePool(),
+			resource: MinimumValidNodePoolTestCase(),
 		},
 	}
 
-	// from hcpopenshiftcluster_test.go
-	validate := newTestValidator()
+	validate := NewTestValidator()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -144,16 +138,11 @@ func TestNodePoolValidateTags(t *testing.T) {
 		},
 	}
 
-	// from hcpopenshiftcluster_test.go
-	validate := newTestValidator()
+	validate := NewTestValidator()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resource := minimumValidNodePool()
-			err := mergo.Merge(resource, tt.tweaks, mergo.WithOverride)
-			if err != nil {
-				t.Fatal(err)
-			}
+			resource := NodePoolTestCase(t, tt.tweaks)
 
 			actualErrors := ValidateRequest(validate, http.MethodPut, resource)
 

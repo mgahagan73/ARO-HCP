@@ -1,3 +1,17 @@
+// Copyright 2025 Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package arm
 
 import (
@@ -5,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCorrelationData(t *testing.T) {
@@ -32,17 +47,9 @@ func TestNewCorrelationData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			correlationData := NewCorrelationData(tt.request)
 
-			if correlationData.RequestID == uuid.Nil {
-				t.Fatalf("correlationData.RequestID is nil")
-			}
-
-			if correlationData.ClientRequestID != client_request_id {
-				t.Errorf("got %v, but want %v", correlationData.ClientRequestID, client_request_id)
-			}
-
-			if correlationData.CorrelationRequestID != correlation_request_id {
-				t.Errorf("got %v, but want %v", correlationData.CorrelationRequestID, correlation_request_id)
-			}
+			assert.NotEqual(t, uuid.Nil, correlationData.RequestID)
+			assert.Equal(t, client_request_id, correlationData.ClientRequestID)
+			assert.Equal(t, correlation_request_id, correlationData.CorrelationRequestID)
 		})
 	}
 }

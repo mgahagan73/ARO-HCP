@@ -1,7 +1,18 @@
-package frontend
+// Copyright 2025 Microsoft Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// Copyright (c) Microsoft Corporation.
-// Licensed under the Apache License 2.0.
+package frontend
 
 import (
 	"bytes"
@@ -148,17 +159,9 @@ func TestMiddlewareCorrelation(t *testing.T) {
 
 			// Check that the correlation data was found in the next handler.
 			assert.NotNil(t, data)
-			if data.RequestID.String() == "" {
-				t.Fatalf("got empty request ID in the context")
-			}
-
-			if data.CorrelationRequestID != tt.expectedCorrelationID {
-				t.Fatalf("expected correlation ID %q, got %q", tt.expectedCorrelationID, data.CorrelationRequestID)
-			}
-
-			if data.ClientRequestID != tt.expectedClientRequestID {
-				t.Fatalf("expected client request ID %q, got %q", tt.expectedClientRequestID, data.ClientRequestID)
-			}
+			assert.NotEmpty(t, data.RequestID.String())
+			assert.Equal(t, tt.expectedCorrelationID, data.CorrelationRequestID)
+			assert.Equal(t, tt.expectedClientRequestID, data.ClientRequestID)
 
 			// Check that the contextual logger had the expected attributes.
 			lines := strings.Split(strings.TrimSuffix(buf.String(), "\n"), "\n")
