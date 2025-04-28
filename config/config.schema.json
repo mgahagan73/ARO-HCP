@@ -26,7 +26,11 @@
           "type": "string",
           "description": "Defines which exporter the SDK should use"
         }
-      }
+      },
+      "required": [
+        "address",
+        "exporter"
+      ]
     },
     "acr": {
       "type": "object",
@@ -43,6 +47,23 @@
         "name",
         "zoneRedundantMode"
       ]
+    },
+    "nsp": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "accessMode": {
+          "type": "string",
+          "enum": [
+            "Audit",
+            "Enforced",
+            "Learning"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "keyVault": {
       "type": "object",
@@ -226,16 +247,16 @@
         "Auto"
       ]
     },
-    "prometheus":{
+    "prometheus": {
       "type": "object",
-      "properties":{
-        "namespace":{
+      "properties": {
+        "namespace": {
           "type": "string"
         },
         "namespaceLabel": {
-          "type" :"string"
+          "type": "string"
         },
-        "prometheusOperator":{
+        "prometheusOperator": {
           "type:": "object",
           "properties": {
             "image": {
@@ -246,7 +267,7 @@
             }
           }
         },
-        "prometheusSpec":{
+        "prometheusSpec": {
           "type": "object",
           "properties": {
             "image": {
@@ -255,10 +276,10 @@
             "version": {
               "type": "string"
             },
-            "replicas":{
+            "replicas": {
               "type": "number"
             },
-            "shards":{
+            "shards": {
               "type": "number"
             }
           }
@@ -447,7 +468,8 @@
         "managedIdentityName",
         "k8s",
         "azureOperatorsManagedIdentities",
-        "postgres"
+        "postgres",
+        "tracing"
       ]
     },
     "cxKeyVault": {
@@ -568,7 +590,8 @@
       "required": [
         "image",
         "cosmosDB",
-        "cert"
+        "cert",
+        "tracing"
       ]
     },
     "genevaActions": {
@@ -583,26 +606,26 @@
         "serviceTag"
       ]
     },
-    "mise":{
+    "mise": {
       "properties": {
-        "deploy" :{
+        "deploy": {
           "type": "boolean"
         },
-        "azureAdInstance":{
-          "type":"string"
+        "azureAdInstance": {
+          "type": "string"
         },
-        "firstPartyAppId":{
-          "type":"string"
+        "firstPartyAppId": {
+          "type": "string"
         },
-        "armAppId":{
-          "type":"string",
+        "armAppId": {
+          "type": "string",
           "description": "The valid app ID for mise, which is the ARM Application Id, this is common across all clouds (MSIT/AME/FF)"
         },
-        "image":{
+        "image": {
           "$ref": "#/definitions/containerImage"
         }
       },
-      "required" : [
+      "required": [
         "deploy",
         "image",
         "azureAdInstance",
@@ -649,8 +672,8 @@
       "type": "object",
       "properties": {
         "image": {
-        "$ref": "#/definitions/containerImage"
-     }
+          "$ref": "#/definitions/containerImage"
+        }
       },
       "additionalProperties": false,
       "required": [
@@ -936,6 +959,9 @@
         "applyKubeletFixes": {
           "type": "boolean"
         },
+        "nsp": {
+          "$ref": "#/definitions/nsp"
+        },
         "rg": {
           "type": "string"
         },
@@ -949,7 +975,7 @@
           "description": "MDSD / Genevabits log aggregation and shipping configuration",
           "$ref": "#/definitions/aksLogConfig"
         },
-        "prometheus":{
+        "prometheus": {
           "description": "Prometheus deployment configuration",
           "$ref": "#/definitions/prometheus"
         }
@@ -973,6 +999,9 @@
           "type": "string"
         },
         "grafanaName": {
+          "type": "string"
+        },
+        "grafanaMajorVersion": {
           "type": "string"
         },
         "grafanaZoneRedundantMode": {
@@ -1002,7 +1031,6 @@
             "enable": {
               "type": "boolean"
             }
-
           },
           "additionalProperties": false,
           "required": [
@@ -1124,6 +1152,9 @@
         },
         "subscription": {
           "type": "string"
+        },
+        "nsp": {
+          "$ref": "#/definitions/nsp"
         },
         "jaeger": {
           "deploy": "boolean"

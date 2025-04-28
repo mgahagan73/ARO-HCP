@@ -43,6 +43,9 @@ defaults:
   svc:
     subscription: ARO Hosted Control Planes (EA Subscription 1)
     rg: hcp-underlay-{{ .ctx.regionShort }}-svc
+    nsp:
+      name: nsp-{{ .ctx.regionShort }}-svc
+      accessMode: 'Learning'
     istio:
       istioctlVersion: "1.23.1"
       tag: "prod-stable"
@@ -84,6 +87,9 @@ defaults:
     subscription: ARO Hosted Control Planes (EA Subscription 1)
     rg: hcp-underlay-{{ .ctx.regionShort }}-mgmt-{{ .ctx.stamp }}
     applyKubeletFixes: true
+    nsp:
+      name: nsp-{{ .ctx.regionShort }}-mgmt
+      accessMode: 'Learning'
     aks:
       name: "{{ .ctx.regionShort }}-mgmt-{{ .ctx.stamp }}"
       vnetAddressPrefix: "10.128.0.0/14"
@@ -382,6 +388,7 @@ clouds:
       monitoring:
         workspaceName: 'arohcp-{{ .ctx.regionShort }}'
         grafanaName: 'arohcp-dev'
+        grafanaMajorVersion: '11'
         grafanaZoneRedundantMode: Disabled
         grafanaAdminGroupPrincipalId: 6b6d3adf-8476-4727-9812-20ffdef2b85c
       # DEVOPS MSI
