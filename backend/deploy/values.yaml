@@ -8,3 +8,9 @@ deployment:
   imageName: ""
 serviceAccount:
   workloadIdentityClientId: ""
+clustersService:
+  namespace: ""
+  serviceAccount: ""
+tracing:
+  address: ""
+  exporter: ""

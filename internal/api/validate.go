@@ -15,6 +15,7 @@
 package api
 
 import (
+	"context"
 	"crypto/x509"
 	"fmt"
 	"net/http"
@@ -25,8 +26,16 @@ import (
 
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	validator "github.com/go-playground/validator/v10"
+	k8svalidation "k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/Azure/ARO-HCP/internal/api/arm"
+)
+
+type contextKey int
+
+const (
+	contextKeyRequest contextKey = iota
+	contextKeyResourceType
 )
 
 // GetJSONTagName extracts the JSON field name from the "json" key in
@@ -93,6 +102,43 @@ func NewValidator() *validator.Validate {
 		panic(err)
 	}
 
+	// Use this for string fields that must be a valid Kubernetes qualified name.
+	err = validate.RegisterValidation("k8s_qualified_name", func(fl validator.FieldLevel) bool {
+		field := fl.Field()
+		if field.Kind() != reflect.String {
+			panic("String type required for k8s_qualified_name")
+		}
+		return len(k8svalidation.IsQualifiedName(field.String())) == 0
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Use this for string fields that must be a valid Kubernetes label value.
+	err = validate.RegisterValidation("k8s_label_value", func(fl validator.FieldLevel) bool {
+		field := fl.Field()
+		if field.Kind() != reflect.String {
+			panic("String type required for k8s_label_value")
+		}
+		return len(k8svalidation.IsValidLabelValue(field.String())) == 0
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Use this for version ID fields that might begin with "openshift-v".
+	err = validate.RegisterValidation("openshift_version", func(fl validator.FieldLevel) bool {
+		field := fl.Field()
+		if field.Kind() != reflect.String {
+			panic("String type required for openshift_version")
+		}
+		_, err := NewOpenShiftVersion(field.String())
+		return err == nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	// Use this for string fields providing PEM encoded certificates.
 	err = validate.RegisterValidation("pem_certificates", func(fl validator.FieldLevel) bool {
 		field := fl.Field()
@@ -106,12 +152,27 @@ func NewValidator() *validator.Validate {
 	}
 
 	// Use this for fields required in PUT requests. Do not apply to read-only fields.
-	err = validate.RegisterValidation("required_for_put", func(fl validator.FieldLevel) bool {
-		val := fl.Top().FieldByName("Method")
-		if val.IsZero() {
-			panic("Method field not found for required_for_put")
+	err = validate.RegisterValidationCtx("required_for_put", func(ctx context.Context, fl validator.FieldLevel) bool {
+		var method string
+
+		if request, ok := ctx.Value(contextKeyRequest).(*http.Request); ok {
+			if request != nil {
+				method = request.Method
+			}
+		} else {
+			panic(fmt.Sprintf("Could not obtain http.Request for %q validation", fl.GetTag()))
 		}
-		if val.String() != http.MethodPut {
+
+		switch method {
+		case http.MethodPut:
+			// proceed
+		case http.MethodPost:
+			// For deployment preflight we evaluate resources as though it were a PUT.
+			resourceType, ok := ctx.Value(contextKeyResourceType).(azcorearm.ResourceType)
+			if !ok || !strings.EqualFold(resourceType.String(), PreflightResourceType.String()) {
+				return true
+			}
+		default:
 			return true
 		}
 
@@ -157,12 +218,6 @@ func NewValidator() *validator.Validate {
 	return validate
 }
 
-type validateContext struct {
-	// Fields must be exported so valdator can access.
-	Method   string
-	Resource any
-}
-
 // approximateJSONName approximates the JSON name for a struct field name by
 // lowercasing the first letter. This is not always accurate in general but
 // works for the small set of cases where we need it.
@@ -178,10 +233,43 @@ func approximateJSONName(s string) string {
 	return string(lc) + s[size:]
 }
 
-func ValidateRequest(validate *validator.Validate, method string, resource any) []arm.CloudErrorBody {
+// fieldErrorToTarget converts a validator.FieldError to a string suitable
+// for use as a CloudErrorBody.Target by removing leading namespace segments
+// that have no JSON tag (struct name + any embedded structs).
+//
+// e.g. "HCPOpenShiftCluster.TrackedResource.Resource.name" shortens to "name"
+// because the Resource.Name field has a JSON tag but the rest of the namespace
+// segments do not.
+func fieldErrorToTarget(fe validator.FieldError) string {
+	// These segments use the JSON field name if present.
+	namespace := strings.Split(fe.Namespace(), ".")
+	// These segments use only the struct field name.
+	structNamespace := strings.Split(fe.StructNamespace(), ".")
+
+	// Find the index where namespace and structNamespace diverge.
+	minLength := min(len(namespace), len(structNamespace))
+	for i := 0; i < minLength; i++ {
+		if namespace[i] != structNamespace[i] {
+			return strings.Join(namespace[i:], ".")
+		}
+	}
+
+	// Fallback in case none of the namespace segments have JSON names.
+	return fe.Namespace()
+}
+
+func ValidateRequest(validate *validator.Validate, request *http.Request, resource any) []arm.CloudErrorBody {
+	var ctx = context.Background()
 	var errorDetails []arm.CloudErrorBody
 
-	err := validate.Struct(validateContext{Method: method, Resource: resource})
+	ctx = context.WithValue(ctx, contextKeyRequest, request)
+	if request != nil && request.URL != nil {
+		resourceType, err := azcorearm.ParseResourceType(request.URL.Path)
+		if err == nil {
+			ctx = context.WithValue(ctx, contextKeyResourceType, resourceType)
+		}
+	}
+	err := validate.StructCtx(ctx, resource)
 
 	if err == nil {
 		return nil
@@ -204,8 +292,22 @@ func ValidateRequest(validate *validator.Validate, method string, resource any) 
 				switch tag {
 				case "api_version": // custom tag
 					message = fmt.Sprintf("Unrecognized API version '%s'", fieldErr.Value())
+				case "openshift_version": // custom tag
+					message = fmt.Sprintf("Invalid OpenShift version '%s'", fieldErr.Value())
 				case "pem_certificates": // custom tag
 					message += " (must provide PEM encoded certificates)"
+				case "k8s_label_value": // custom tag
+					// Rerun the label value validation to obtain the error message.
+					if value, ok := fieldErr.Value().(string); ok {
+						errList := k8svalidation.IsValidLabelValue(value)
+						message += fmt.Sprintf(" (%s)", strings.Join(errList, "; "))
+					}
+				case "k8s_qualified_name": // custom tag
+					// Rerun the qualified name validation to obtain the error message.
+					if value, ok := fieldErr.Value().(string); ok {
+						errList := k8svalidation.IsQualifiedName(value)
+						message += fmt.Sprintf(" (%s)", strings.Join(errList, "; "))
+					}
 				case "required", "required_for_put": // custom tag
 					message = fmt.Sprintf("Missing required field '%s'", fieldErr.Field())
 				case "required_unless":
@@ -278,8 +380,7 @@ func ValidateRequest(validate *validator.Validate, method string, resource any) 
 			errorDetails = append(errorDetails, arm.CloudErrorBody{
 				Code:    arm.CloudErrorCodeInvalidRequestContent,
 				Message: message,
-				// Split "validateContext.Resource.{REMAINING_FIELDS}"
-				Target: strings.SplitN(fieldErr.Namespace(), ".", 3)[2],
+				Target:  fieldErrorToTarget(fieldErr),
 			})
 		}
 	default:
@@ -293,7 +394,7 @@ func ValidateRequest(validate *validator.Validate, method string, resource any) 
 }
 
 // ValidateSubscription validates a subscription request payload.
-func ValidateSubscription(subscription *arm.Subscription) *arm.CloudError {
+func ValidateSubscription(subscription *arm.Subscription, request *http.Request) *arm.CloudError {
 	cloudError := arm.NewCloudError(
 		http.StatusBadRequest,
 		arm.CloudErrorCodeMultipleErrorsOccurred, "",
@@ -301,8 +402,7 @@ func ValidateSubscription(subscription *arm.Subscription) *arm.CloudError {
 	cloudError.Details = make([]arm.CloudErrorBody, 0)
 
 	validate := NewValidator()
-	// There is no PATCH method for subscriptions, so assume PUT.
-	errorDetails := ValidateRequest(validate, http.MethodPut, subscription)
+	errorDetails := ValidateRequest(validate, request, subscription)
 	if errorDetails != nil {
 		cloudError.Details = append(cloudError.Details, errorDetails...)
 	}

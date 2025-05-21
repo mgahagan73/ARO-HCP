@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Azure/ARO-HCP/internal/api/arm"
 )
@@ -124,11 +125,15 @@ func TestClusterRequiredForPut(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			request, err := http.NewRequest(http.MethodPut, "localhost", nil)
+			require.NoError(t, err)
+
 			resource := tt.resource
 			if resource == nil {
 				resource = ClusterTestCase(t, tt.tweaks)
 			}
-			actualErrors := ValidateRequest(validate, http.MethodPut, resource)
+
+			actualErrors := ValidateRequest(validate, request, resource)
 
 			diff := compareErrors(tt.expectErrors, actualErrors)
 			if diff != "" {
@@ -175,6 +180,22 @@ func TestClusterValidateTags(t *testing.T) {
 				{
 					Message: "Invalid value '0badlabel' for field 'baseDomainPrefix' (must be a valid DNS RFC 1035 label)",
 					Target:  "properties.dns.baseDomainPrefix",
+				},
+			},
+		},
+		{
+			name: "Bad openshift_version",
+			tweaks: &HCPOpenShiftCluster{
+				Properties: HCPOpenShiftClusterProperties{
+					Version: VersionProfile{
+						ID: "bad.version",
+					},
+				},
+			},
+			expectErrors: []arm.CloudErrorBody{
+				{
+					Message: "Invalid OpenShift version 'bad.version'",
+					Target:  "properties.version.id",
 				},
 			},
 		},
@@ -296,7 +317,7 @@ func TestClusterValidateTags(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			resource := ClusterTestCase(t, tt.tweaks)
 
-			actualErrors := ValidateRequest(validate, http.MethodPut, resource)
+			actualErrors := ValidateRequest(validate, nil, resource)
 
 			diff := compareErrors(tt.expectErrors, actualErrors)
 			if diff != "" {

@@ -51,7 +51,11 @@ deploy:
 		--set serviceAccount.workloadIdentityClientId="$${BACKEND_MI_CLIENT_ID}" \
 		--set configMap.currentVersion=${ARO_HCP_BACKEND_IMAGE}@$${DIGEST} \
 		--set configMap.location=${LOCATION} \
+		--set clustersService.namespace=${CS_NAMESPACE} \
+		--set clustersService.serviceAccount=${CS_SERVICE_ACCOUNT_NAME} \
 		--set deployment.imageName=${ARO_HCP_BACKEND_IMAGE}@$${DIGEST} \
+		--set tracing.address=${TRACING_ADDRESS} \
+		--set tracing.exporter=${TRACING_EXPORTER} \
 		--namespace aro-hcp
 .PHONY: deploy
 

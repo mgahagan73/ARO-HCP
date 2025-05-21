@@ -25,6 +25,10 @@
       "digest": "",
       "registry": "arohcpsvcdev.azurecr.io",
       "repository": "arohcpbackend"
+    },
+    "tracing": {
+      "address": "",
+      "exporter": ""
     }
   },
   "backplaneAPI": {
@@ -34,7 +38,7 @@
       "repository": "app-sre/backplane-api"
     }
   },
-  "clusterService": {
+  "clustersService": {
     "azureOperatorsManagedIdentities": {
       "cloudControllerManager": {
         "roleName": "Azure Red Hat OpenShift Cloud Controller Manager - Dev"
@@ -43,10 +47,10 @@
         "roleName": "Azure Red Hat OpenShift Network Operator - Dev"
       },
       "clusterApiAzure": {
-        "roleName": "Azure Red Hat OpenShift Control Plane Operator Role - Dev"
+        "roleName": "Azure Red Hat OpenShift Cluster API Role - Dev"
       },
       "controlPlane": {
-        "roleName": "Azure Red Hat OpenShift Cluster API Role - Dev"
+        "roleName": "Azure Red Hat OpenShift Control Plane Operator Role - Dev"
       },
       "diskCsiDriver": {
         "roleName": "Azure Red Hat OpenShift Disk Storage Operator - Dev"
@@ -66,7 +70,7 @@
     },
     "environment": "arohcpdev",
     "image": {
-      "digest": "sha256:777e6f7be92f113b9c188de36b6925dff2537c23fd2efca115b21d42fa9d29e5",
+      "digest": "sha256:ec301b5cdd705c5bc07812f5d6628bf8ffe792a3a38f3876ac4fdc669d7f8485",
       "registry": "quay.io",
       "repository": "app-sre/uhc-clusters-service"
     },
@@ -138,6 +142,10 @@
       "name": "arohcpdev-global",
       "private": false,
       "softDelete": true
+    },
+    "nsp": {
+      "accessMode": "Learning",
+      "name": "nsp-global"
     },
     "region": "westus3",
     "rg": "global",
@@ -215,7 +223,7 @@
       "private": false
     },
     "image": {
-      "digest": "sha256:f64ad21dcbe40ed7d29aff7d2d7320c0a5ee18c6bfabfef9486550a96ff27141",
+      "digest": "sha256:71788add6afc26829ef75432714fa3052c7dbc1d62d0002ff4c736a8038c18f4",
       "registry": "quay.io",
       "repository": "redhat-user-workloads/maestro-rhtap-tenant/maestro/maestro"
     },
@@ -253,6 +261,13 @@
         "kvName": "arohcp-etcd-nightly-1",
         "kvSoftDelete": false
       },
+      "infraAgentPool": {
+        "azCount": 1,
+        "maxCount": 3,
+        "minCount": 1,
+        "osDiskSizeGB": 32,
+        "vmSize": "Standard_D2s_v3"
+      },
       "kubernetesVersion": "1.31.6",
       "name": "nightly-mgmt-1",
       "networkDataplane": "azure",
@@ -277,7 +292,7 @@
     "applyKubeletFixes": false,
     "nsp": {
       "accessMode": "Learning",
-      "name": "nsp-nightly-mgmt"
+      "name": "nsp-nightly-mgmt-1"
     },
     "prometheus": {
       "namespace": "prometheus",
@@ -321,13 +336,19 @@
     "image": {
       "digest": "",
       "repository": ""
-    }
+    },
+    "tenantId": ""
   },
   "monitoring": {
+    "devAlertingEmails": "aro-hcp-service-lifecycle-team@redhat.com",
     "grafanaAdminGroupPrincipalId": "6b6d3adf-8476-4727-9812-20ffdef2b85c",
     "grafanaMajorVersion": "11",
     "grafanaName": "arohcp-dev",
     "grafanaZoneRedundantMode": "Disabled",
+    "sev1ActionGroupIDs": "",
+    "sev2ActionGroupIDs": "",
+    "sev3ActionGroupIDs": "",
+    "sev4ActionGroupIDs": "",
     "workspaceName": "arohcp-nightly"
   },
   "msiKeyVault": {
@@ -345,6 +366,7 @@
   "region": "westus3",
   "regionRG": "hcp-underlay-nightly",
   "serviceKeyVault": {
+    "assignNSP": true,
     "name": "aro-hcp-dev-svc-kv",
     "private": false,
     "region": "westus3",
@@ -357,6 +379,13 @@
       "etcd": {
         "kvName": "arohcp-etcd-nightly",
         "kvSoftDelete": false
+      },
+      "infraAgentPool": {
+        "azCount": 1,
+        "maxCount": 3,
+        "minCount": 1,
+        "osDiskSizeGB": 32,
+        "vmSize": "Standard_D2s_v3"
       },
       "kubernetesVersion": "1.31.6",
       "name": "nightly-svc",

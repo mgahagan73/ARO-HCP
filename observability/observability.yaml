@@ -1,6 +1,5 @@
 prometheusRules:
-  rulesFolders:
-  - ../cluster-service/alerts
+  rulesFolders: []
   untestedRules:
   - ../observability/alerts/kubernetesControlPlane-prometheusRule.yaml
   outputBicep: ../dev-infrastructure/modules/metrics/rules/generatedPrometheusAlertingRules.bicep
@@ -15,3 +14,5 @@ grafana-dashboards:
     path: ../istio/grafana-dashboards
   - name: Image Sync
     path: ../image-sync/grafana-dashboards
+  - name: Infrastructure
+    path: infra-dashboards

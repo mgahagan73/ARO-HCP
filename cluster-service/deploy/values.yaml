@@ -146,9 +146,9 @@ memoryLimit: "1Gi"
 cpuRequest: "50m"
 # CPU limit.
 cpuLimit: "1"
-# Client ID for the clusters-service manage identity.
+# Client ID for the CS manage identity.
 azureCsMiClientId: ""
-# Azure region the cluster-service instance is running in.
+# Azure region the CS instance is running in.
 region: "westus3"
 # The client id of the first party application identity.
 azureFirstPartyApplicationClientId: ""
@@ -209,30 +209,39 @@ managedIdentitiesDataPlaneAudienceResource: "https://dummy.org"
 # The Azure Operator Managed Identities.
 azureOperatorsMI:
   clusterApiAzure:
+    roleDefinitions: []
     roleName: ''
     roleId: ''
   controlPlane:
+    roleDefinitions: []
     roleName: ''
     roleId: ''
   cloudControllerManager:
+    roleDefinitions: []
     roleName: ''
     roleId: ''
   ingress:
+    roleDefinitions: []
     roleName: ''
     roleId: ''
   diskCsiDriver:
+    roleDefinitions: []
     roleName: ''
     roleId: ''
   fileCsiDriver:
+    roleDefinitions: []
     roleName: ''
     roleId: ''
   imageRegistry:
+    roleDefinitions: []
     roleName: ''
     roleId: ''
   cloudNetworkConfig:
+    roleDefinitions: []
     roleName: ''
     roleId: ''
   kms:
+    roleDefinitions: []
     roleName: ''
     roleId: ''
 # Pull binding configuration for ACR Pull Operator
@@ -243,4 +252,3 @@ pullBinding:
   workloadIdentityTenantId: ""
 tracing:
   address: ""
-  exporter: ""

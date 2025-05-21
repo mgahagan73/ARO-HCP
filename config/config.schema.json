@@ -189,6 +189,9 @@
         "systemAgentPool": {
           "$ref": "#/definitions/aksAgentPool"
         },
+        "infraAgentPool": {
+          "$ref": "#/definitions/aksAgentPool"
+        },
         "clusterOutboundIPAddressIPTags": {
           "$ref": "#/definitions/keyColonValueCSV"
         },
@@ -351,7 +354,7 @@
         "imageTag"
       ]
     },
-    "clusterService": {
+    "clustersService": {
       "type": "object",
       "properties": {
         "environment": {
@@ -526,11 +529,15 @@
       "properties": {
         "image": {
           "$ref": "#/definitions/containerImage"
+        },
+        "tracing": {
+          "$ref": "#/definitions/tracing"
         }
       },
       "additionalProperties": false,
       "required": [
-        "image"
+        "image",
+        "tracing"
       ]
     },
     "frontend": {
@@ -623,6 +630,9 @@
         },
         "image": {
           "$ref": "#/definitions/containerImage"
+        },
+        "tenantId": {
+          "type": "string"
         }
       },
       "required": [
@@ -630,12 +640,16 @@
         "image",
         "azureAdInstance",
         "firstPartyAppId",
-        "armAppId"
+        "armAppId",
+        "tenantId"
       ]
     },
     "global": {
       "type": "object",
       "properties": {
+        "nsp": {
+          "$ref": "#/definitions/nsp"
+        },
         "rg": {
           "type": "string"
         },
@@ -1009,6 +1023,21 @@
         },
         "workspaceName": {
           "type": "string"
+        },
+        "devAlertingEmails": {
+          "type": "string"
+        },
+        "sev1ActionGroupIDs": {
+          "type": "string"
+        },
+        "sev2ActionGroupIDs": {
+          "type": "string"
+        },
+        "sev3ActionGroupIDs": {
+          "type": "string"
+        },
+        "sev4ActionGroupIDs": {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -1130,6 +1159,9 @@
         },
         "softDelete": {
           "type": "boolean"
+        },
+        "assignNSP":{
+          "type":"boolean"
         }
       },
       "additionalProperties": false,
@@ -1247,7 +1279,7 @@
     "aroDevopsMsiId",
     "kvCertOfficerPrincipalId",
     "backplaneAPI",
-    "clusterService",
+    "clustersService",
     "cxKeyVault",
     "firstPartyAppClientId",
     "firstPartyAppCertificate",
