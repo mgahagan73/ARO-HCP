@@ -34,7 +34,7 @@
   "backplaneAPI": {
     "image": {
       "digest": "sha256:822477832a73c7eab7fe27200994f10030f708f4a752f33ded3f8f8eaa0470f6",
-      "registry": "arohcpsvcdev.azurecr.io",
+      "registry": "quay.io",
       "repository": "app-sre/backplane-api"
     }
   },
@@ -75,14 +75,14 @@
       "repository": "app-sre/uhc-clusters-service"
     },
     "k8s": {
-      "namespace": "cluster-service",
+      "namespace": "clusters-service",
       "serviceAccountName": "clusters-service"
     },
     "managedIdentityName": "clusters-service",
     "postgres": {
-      "deploy": false,
+      "deploy": true,
       "minTLSVersion": "TLSV1.2",
-      "name": "arohcp-cs-nightly",
+      "name": "arohcp-cspr-dbcs-ussw1",
       "private": false,
       "zoneRedundantMode": "Auto"
     },
@@ -92,7 +92,7 @@
     }
   },
   "cxKeyVault": {
-    "name": "arohcp-cx-nightly-1",
+    "name": "ah-cspr-cx-ussw1-999",
     "private": false,
     "softDelete": false
   },
@@ -101,7 +101,7 @@
     "cxParentZoneDelegation": false,
     "cxParentZoneName": "hcp.osadev.cloud",
     "parentZoneName": "osadev.cloud",
-    "regionalSubdomain": "nightly",
+    "regionalSubdomain": "southwestus-cs",
     "svcParentZoneName": "hcpsvc.osadev.cloud"
   },
   "extraVars": {},
@@ -114,12 +114,12 @@
   "frontend": {
     "cert": {
       "issuer": "Self",
-      "name": "frontend-cert-nightly"
+      "name": "frontend-cert-cspr-ussw1"
     },
     "cosmosDB": {
       "deploy": true,
       "disableLocalAuth": true,
-      "name": "arohcp-rp-nightly",
+      "name": "arohcpcspr-rp-ussw1",
       "private": false,
       "zoneRedundantMode": "Disabled"
     },
@@ -156,7 +156,7 @@
   "hypershift": {
     "additionalInstallArg": "",
     "image": {
-      "digest": "sha256:0e6706e3bbc058a65f34dad7ccf048e56b1f32ca610c6f39f085ddb8bb1169ef",
+      "digest": "sha256:607dcc3e795a1fb8e7647aa6ccf5b19dbfba8b4387f8eac9e304b33265a80d05",
       "registry": "quay.io",
       "repository": "acm-d/rhtap-hypershift-operator"
     },
@@ -171,7 +171,7 @@
         "repository": "image-sync/component-sync"
       },
       "pullSecretName": "component-sync-pull-secret",
-      "repositories": "quay.io/redhat-user-workloads/maestro-rhtap-tenant/maestro/maestro,quay.io/acm-d/rhtap-hypershift-operator,quay.io/app-sre/uhc-clusters-service,quay.io/package-operator/package-operator-package,quay.io/package-operator/package-operator-manager,quay.io/app-sre/backplane-api",
+      "repositories": "quay.io/redhat-user-workloads/maestro-rhtap-tenant/maestro/maestro,quay.io/acm-d/rhtap-hypershift-operator,quay.io/app-sre/uhc-clusters-service,quay.io/package-operator/package-operator-package,quay.io/package-operator/package-operator-manager,quay.io/package-operator/remote-phase-manager,quay.io/app-sre/backplane-api",
       "secrets": "quay.io:quay-io-bearer"
     },
     "environmentName": "aro-hcp-image-sync",
@@ -189,7 +189,7 @@
   "kvCertOfficerPrincipalId": "c9b1819d-bb29-4ac2-9abe-39e4fe9b59eb",
   "logs": {
     "loganalytics": {
-      "enable": false
+      "enable": true
     },
     "mdsd": {
       "cert": {
@@ -205,7 +205,7 @@
   },
   "maestro": {
     "agent": {
-      "consumerName": "hcp-underlay-nightly-mgmt-1",
+      "consumerName": "hcp-underlay-ussw1-mgmt-999",
       "loglevel": 4,
       "sidecar": {
         "image": {
@@ -219,7 +219,7 @@
     "certIssuer": "Self",
     "eventGrid": {
       "maxClientSessionsPerAuthName": 6,
-      "name": "arohcp-maestro-nightly",
+      "name": "arohcp-cspr-maestro-ussw1",
       "private": false
     },
     "image": {
@@ -229,15 +229,15 @@
     },
     "postgres": {
       "databaseName": "maestro",
-      "deploy": false,
+      "deploy": true,
       "minTLSVersion": "TLSV1.2",
-      "name": "arohcp-maestro-nightly",
+      "name": "arohcp-cspr-dbmaestro-ussw1",
       "private": false,
       "serverStorageSizeGB": 32,
       "serverVersion": "15",
       "zoneRedundantMode": "Auto"
     },
-    "restrictIstioIngress": true,
+    "restrictIstioIngress": false,
     "server": {
       "k8s": {
         "namespace": "maestro",
@@ -245,12 +245,11 @@
       },
       "loglevel": 4,
       "managedIdentityName": "maestro-server",
-      "mqttClientName": "maestro-server-nightly"
-    }
-  },
-  "mce": {
-    "clcStateMetrics": {
-      "imageDigest": "bf5bb514e4d8af5e38317c3727d4cd9f90c22b293fe3e2367f9f0e179e0ee0c7"
+      "mqttClientName": "maestro-server-ussw1",
+      "tracing": {
+        "address": "",
+        "exporter": ""
+      }
     }
   },
   "mgmt": {
@@ -258,7 +257,7 @@
       "clusterOutboundIPAddressIPTags": "",
       "enableSwiftV2": false,
       "etcd": {
-        "kvName": "arohcp-etcd-nightly-1",
+        "kvName": "ah-cspr-me-ussw1-999",
         "kvSoftDelete": false
       },
       "infraAgentPool": {
@@ -269,7 +268,7 @@
         "vmSize": "Standard_D2s_v3"
       },
       "kubernetesVersion": "1.31.8",
-      "name": "nightly-mgmt-1",
+      "name": "cspr-southwestus-mgmt-999",
       "networkDataplane": "azure",
       "networkPolicy": "azure",
       "podSubnetPrefix": "10.128.64.0/18",
@@ -277,22 +276,27 @@
       "systemAgentPool": {
         "maxCount": 4,
         "minCount": 1,
-        "osDiskSizeGB": 32,
-        "vmSize": "Standard_D2s_v3"
+        "osDiskSizeGB": 128,
+        "vmSize": "Standard_E8s_v3"
       },
       "userAgentPool": {
         "azCount": 3,
-        "maxCount": 6,
+        "maxCount": 3,
         "minCount": 1,
-        "osDiskSizeGB": 100,
-        "vmSize": "Standard_D4s_v3"
+        "osDiskSizeGB": 128,
+        "vmSize": "Standard_D16s_v3"
       },
       "vnetAddressPrefix": "10.128.0.0/14"
     },
-    "applyKubeletFixes": false,
+    "applyKubeletFixes": true,
+    "logs": {
+      "configVersion": "",
+      "namespace": "HCPCustomerLogs",
+      "san": ""
+    },
     "nsp": {
       "accessMode": "Learning",
-      "name": "nsp-nightly-mgmt-1"
+      "name": "nsp-ussw1-mgmt-999"
     },
     "prometheus": {
       "namespace": "prometheus",
@@ -316,11 +320,11 @@
         "version": "v2.55.1-3"
       }
     },
-    "rg": "hcp-underlay-nightly-mgmt-1",
+    "rg": "hcp-underlay-cspr-southwestus-mgmt-999",
     "subscription": "ARO Hosted Control Planes (EA Subscription 1)"
   },
   "mgmtKeyVault": {
-    "name": "arohcp-mgmt-nightly-1",
+    "name": "ah-cspr-mg-ussw1-999",
     "private": false,
     "softDelete": false
   },
@@ -345,28 +349,37 @@
     "grafanaMajorVersion": "11",
     "grafanaName": "arohcp-dev",
     "grafanaZoneRedundantMode": "Disabled",
+    "hcpWorkspaceName": "arohcp-hcp-cspr-ussw1",
     "sev1ActionGroupIDs": "",
     "sev2ActionGroupIDs": "",
     "sev3ActionGroupIDs": "",
     "sev4ActionGroupIDs": "",
-    "workspaceName": "arohcp-nightly"
+    "svcWorkspaceName": "arohcp-cspr-ussw1"
   },
   "msiKeyVault": {
-    "name": "arohcp-msi-nightly-1",
+    "name": "ah-cspr-mi-ussw1-999",
     "private": false,
     "softDelete": false
   },
-  "oidcStorageAccountName": "arohcpoidcnightly",
+  "oidcStorageAccountName": "arohcpcsproidcussw1",
   "oidcZoneRedundantMode": "Auto",
   "pko": {
-    "image": "arohcpsvcdev.azurecr.io/package-operator/package-operator-package",
-    "imageManager": "arohcpsvcdev.azurecr.io/package-operator/package-operator-manager",
-    "imageTag": "v1.18.2"
+    "imageManager": {
+      "digest": "sha256:04b280a2dfcd89c433db32106e0f9a80b978c2513b979865df7a66dc67617e90",
+      "registry": "arohcpsvcdev.azurecr.io",
+      "repository": "package-operator/package-operator-manager"
+    },
+    "imagePackage": {
+      "digest": "sha256:a541ddb20875264f1995c38b1dd66de052547c2a861001b3b49c2a56b7e06e0d",
+      "registry": "arohcpsvcdev.azurecr.io",
+      "repository": "package-operator/package-operator-package"
+    },
+    "imagePrefixOverrides": "quay.io/package-operator=arohcpsvcdev.azurecr.io/package-operator"
   },
-  "region": "westus3",
-  "regionRG": "hcp-underlay-nightly",
+  "region": "southwestus",
+  "regionRG": "hcp-underlay-cspr-southwestus",
   "serviceKeyVault": {
-    "assignNSP": true,
+    "assignNSP": false,
     "name": "aro-hcp-dev-svc-kv",
     "private": false,
     "region": "westus3",
@@ -377,18 +390,18 @@
     "aks": {
       "clusterOutboundIPAddressIPTags": "",
       "etcd": {
-        "kvName": "arohcp-etcd-nightly",
+        "kvName": "ah-cspr-se-ussw1-1",
         "kvSoftDelete": false
       },
       "infraAgentPool": {
-        "azCount": 1,
+        "azCount": 3,
         "maxCount": 3,
         "minCount": 1,
         "osDiskSizeGB": 32,
         "vmSize": "Standard_D2s_v3"
       },
       "kubernetesVersion": "1.31.8",
-      "name": "nightly-svc",
+      "name": "cspr-southwestus-svc-1",
       "networkDataplane": "cilium",
       "networkPolicy": "cilium",
       "podSubnetPrefix": "10.128.64.0/18",
@@ -401,8 +414,8 @@
       },
       "userAgentPool": {
         "azCount": 3,
-        "maxCount": 3,
-        "minCount": 1,
+        "maxCount": 12,
+        "minCount": 2,
         "osDiskSizeGB": 32,
         "vmSize": "Standard_D2s_v3"
       },
@@ -411,14 +424,19 @@
     "istio": {
       "ingressGatewayIPAddressIPTags": "",
       "ingressGatewayIPAddressName": "aro-hcp-istio-ingress",
-      "istioctlVersion": "1.23.1",
+      "istioctlVersion": "1.24.1",
       "tag": "prod-stable",
       "targetVersion": "asm-1-25",
       "versions": "asm-1-25"
     },
+    "logs": {
+      "configVersion": "",
+      "namespace": "HCPServiceLogs",
+      "san": ""
+    },
     "nsp": {
       "accessMode": "Learning",
-      "name": "nsp-nightly-svc"
+      "name": "nsp-ussw1-svc"
     },
     "prometheus": {
       "namespace": "prometheus",
@@ -442,7 +460,7 @@
         "version": ""
       }
     },
-    "rg": "hcp-underlay-nightly-svc",
+    "rg": "hcp-underlay-cspr-southwestus-svc",
     "subscription": "ARO Hosted Control Planes (EA Subscription 1)"
   }
 }

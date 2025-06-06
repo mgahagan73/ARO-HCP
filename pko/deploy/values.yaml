@@ -1,6 +1,10 @@
-pkoImage: ""
-pkoImageManager: ""
-pkoImageTag: ""
+pkoImagePackageRegistry: ""
+pkoImagePackageRepository: ""
+pkoImagePackageDigest: ""
+pkoImageManagerRegistry: ""
+pkoImageManagerRepository: ""
+pkoImageManagerDigest: ""
+pkoImagePrefixOverrides: ""
 pullBinding:
   registry: ""
   scope: ""

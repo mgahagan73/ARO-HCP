@@ -1,5 +1,7 @@
 using '../templates/mgmt-cluster.bicep'
 
+param regionalResourceGroup = '{{ .regionRG }}'
+
 // AKS
 param kubernetesVersion = '{{ .mgmt.aks.kubernetesVersion }}'
 param vnetAddressPrefix = '{{ .mgmt.aks.vnetAddressPrefix }}'
@@ -53,6 +55,7 @@ param aroDevopsMsiId = '{{ .aroDevopsMsiId }}'
 
 // Azure Monitor Workspace
 param azureMonitoringWorkspaceId = '__azureMonitoringWorkspaceId__'
+param hcpAzureMonitoringWorkspaceId = '__hcpAzureMonitoringWorkspaceId__'
 
 // MDSD / Genevabits
 @description('The namespace of the logs')

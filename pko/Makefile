@@ -17,22 +17,16 @@ deploy:
 			--query tenantId -o tsv) && \
 	${HELM_CMD} package-operator ./deploy \
 	--namespace ${NAMESPACE} \
-	--set pkoImage=${PKO_IMAGE} \
-	--set pkoImageManager=${PKO_IMAGE_MANAGER} \
-	--set pkoImageTag=${PKO_IMAGE_TAG} \
 	--set pullBinding.workloadIdentityClientId="$${IMAGE_PULLER_MI_CLIENT_ID}" \
 	--set pullBinding.workloadIdentityTenantId="$${IMAGE_PULLER_MI_TENANT_ID}" \
 	--set pullBinding.registry=${ARO_HCP_IMAGE_REGISTRY} \
-	--set pullBinding.scope='repository:*:pull'
-
-image:
-	cd $$(mktemp -d) && \
-	git clone https://github.com/package-operator/package-operator.git && \
-	cd package-operator && \
-	git checkout ${PKO_IMAGE_TAG} && \
-	IMAGE_REGISTRY=${ARO_HCP_IMAGE_REGISTRY}/package-operator \
-	./do CI:RegistryLoginAndReleaseOnlyImages -u 00000000-0000-0000-0000-000000000000 \
-	-p $$(az acr login -n ${ARO_HCP_IMAGE_REGISTRY} --expose-token | jq -r '.accessToken') \
-	${ARO_HCP_IMAGE_REGISTRY}
+	--set pullBinding.scope='repository:*:pull' \
+	--set imagePrefixOverrides=${PKO_IMAGE_PREFIX_OVERRIDES} \
+	--set pkoImagePackageRegistry=${PKO_IMAGEPACKAGE_REGISTRY} \
+	--set pkoImagePackageRepository=${PKO_IMAGEPACKAGE_REPOSITORY} \
+	--set pkoImagePackageDigest=${PKO_IMAGEPACKAGE_DIGEST} \
+	--set pkoImageManagerRegistry=${PKO_IMAGEMANAGER_REGISTRY} \
+	--set pkoImageManagerRepository=${PKO_IMAGEMANAGER_REPOSITORY} \
+	--set pkoImageManagerDigest=${PKO_IMAGEMANAGER_DIGEST}
 
 .PHONY: deploy

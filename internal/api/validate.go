@@ -208,6 +208,16 @@ func NewValidator() *validator.Validate {
 		if err != nil {
 			return false
 		}
+		// Check for required fields.
+		if resourceID.SubscriptionID == "" {
+			return false
+		}
+		if resourceID.ResourceGroupName == "" {
+			return false
+		}
+		if resourceID.Name == "" {
+			return false
+		}
 		resourceType := resourceID.ResourceType.String()
 		return param == "" || strings.EqualFold(resourceType, param)
 	})
@@ -395,25 +405,8 @@ func ValidateRequest(validate *validator.Validate, request *http.Request, resour
 
 // ValidateSubscription validates a subscription request payload.
 func ValidateSubscription(subscription *arm.Subscription, request *http.Request) *arm.CloudError {
-	cloudError := arm.NewCloudError(
-		http.StatusBadRequest,
-		arm.CloudErrorCodeMultipleErrorsOccurred, "",
-		"Content validation failed on multiple fields")
-	cloudError.Details = make([]arm.CloudErrorBody, 0)
+	errorDetails := ValidateRequest(NewValidator(), request, subscription)
 
-	validate := NewValidator()
-	errorDetails := ValidateRequest(validate, request, subscription)
-	if errorDetails != nil {
-		cloudError.Details = append(cloudError.Details, errorDetails...)
-	}
-
-	switch len(cloudError.Details) {
-	case 0:
-		cloudError = nil
-	case 1:
-		// Promote a single validation error out of details.
-		cloudError.CloudErrorBody = &cloudError.Details[0]
-	}
-
-	return cloudError
+	// Returns nil if errorDetails is empty.
+	return arm.NewContentValidationError(errorDetails)
 }

@@ -15,6 +15,13 @@
 package api
 
 import (
+	"fmt"
+	"net/http"
+	"strings"
+
+	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	validator "github.com/go-playground/validator/v10"
+
 	"github.com/Azure/ARO-HCP/internal/api/arm"
 )
 
@@ -50,6 +57,7 @@ type NodePoolVersionProfile struct {
 type NodePoolPlatformProfile struct {
 	SubnetID               string                 `json:"subnetId,omitempty"               validate:"omitempty,resource_id=Microsoft.Network/virtualNetworks/subnets"`
 	VMSize                 string                 `json:"vmSize,omitempty"                 validate:"required_for_put"`
+	EnableEncryptionAtHost bool                   `json:"enableEncryptionAtHost"`
 	DiskSizeGiB            int32                  `json:"diskSizeGiB,omitempty"            validate:"min=1"`
 	DiskStorageAccountType DiskStorageAccountType `json:"diskStorageAccountType,omitempty" validate:"omitempty,enum_diskstorageaccounttype"`
 	AvailabilityZone       string                 `json:"availabilityZone,omitempty"`
@@ -83,4 +91,72 @@ func NewDefaultHCPOpenShiftClusterNodePool() *HCPOpenShiftClusterNodePool {
 			AutoRepair: true,
 		},
 	}
+}
+
+func (nodePool *HCPOpenShiftClusterNodePool) validateVersion(cluster *HCPOpenShiftCluster) []arm.CloudErrorBody {
+	var errorDetails []arm.CloudErrorBody
+
+	if nodePool.Properties.Version.ChannelGroup != cluster.Properties.Version.ChannelGroup {
+		errorDetails = append(errorDetails, arm.CloudErrorBody{
+			Code: arm.CloudErrorCodeInvalidRequestContent,
+			Message: fmt.Sprintf(
+				"Node pool channel group '%s' must be the same as control plane channel group '%s'",
+				nodePool.Properties.Version.ChannelGroup,
+				cluster.Properties.Version.ChannelGroup),
+			Target: "properties.version.channelGroup",
+		})
+	}
+
+	return errorDetails
+}
+
+func (nodePool *HCPOpenShiftClusterNodePool) validateSubnetID(cluster *HCPOpenShiftCluster) []arm.CloudErrorBody {
+	var errorDetails []arm.CloudErrorBody
+
+	if nodePool.Properties.Platform.SubnetID == "" {
+		return nil
+	}
+
+	// Cluster and node pool subnet IDs have already passed syntax validation so
+	// parsing should not fail. If parsing does somehow fail then skip the validation.
+
+	clusterSubnetResourceID, err := azcorearm.ParseResourceID(cluster.Properties.Platform.SubnetID)
+	if err != nil {
+		return nil
+	}
+
+	nodePoolSubnetResourceID, err := azcorearm.ParseResourceID(nodePool.Properties.Platform.SubnetID)
+	if err != nil {
+		return nil
+	}
+
+	clusterVNet := clusterSubnetResourceID.Parent.String()
+	nodePoolVNet := nodePoolSubnetResourceID.Parent.String()
+
+	if !strings.EqualFold(nodePoolVNet, clusterVNet) {
+		errorDetails = append(errorDetails, arm.CloudErrorBody{
+			Code:    arm.CloudErrorCodeInvalidRequestContent,
+			Message: fmt.Sprintf("Subnet '%s' must belong to the same VNet as the parent cluster VNet '%s'", nodePoolSubnetResourceID, clusterVNet),
+			Target:  "properties.platform.subnetId",
+		})
+	}
+
+	return errorDetails
+}
+
+func (nodePool *HCPOpenShiftClusterNodePool) Validate(validate *validator.Validate, request *http.Request, cluster *HCPOpenShiftCluster) []arm.CloudErrorBody {
+	errorDetails := ValidateRequest(validate, request, nodePool)
+
+	// Proceed with complex, multi-field validation only if single-field
+	// validation has passed. This avoids running further checks on data
+	// we already know to be invalid and prevents the response body from
+	// becoming overwhelming.
+	if len(errorDetails) == 0 {
+		if cluster != nil {
+			errorDetails = append(errorDetails, nodePool.validateVersion(cluster)...)
+			errorDetails = append(errorDetails, nodePool.validateSubnetID(cluster)...)
+		}
+	}
+
+	return errorDetails
 }
