@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -26,17 +27,21 @@ var _ = Describe("Confirm HCPCluster is operational", func() {
 		clustersClient = clients.NewHcpOpenShiftClustersClient()
 		By("Preparing customer environment values")
 		customerEnv = &e2eSetup.CustomerEnv
+		clusterInfo = &e2eSetup.Cluster
 	})
 
 	It("Confirm cluster has been created successfully", labels.Medium, func(ctx context.Context) {
 		By("Checking Provisioning state with RP")
-		out, err := clustersClient.Get(ctx, customerEnv.CustomerRGName, clusterInfo.Name, nil)
+		var clusterOptions *api.HcpOpenShiftClustersClientGetOptions
+		println("name is %s", clusterInfo.Name)
+		out, err := clustersClient.Get(ctx, customerEnv.CustomerRGName, clusterInfo.Name, clusterOptions)
 		Expect(err).To(BeNil())
 		Expect(string(*out.Properties.ProvisioningState)).To(Equal(("Succeeded")))
 	})
 	It("Check access to cluster with oc command using kubeconfig file", labels.Medium, func(ctx context.Context) {
 		By("Getting Kubeconfig from RP")
-		adminPoller, err := clustersClient.BeginRequestAdminCredential(ctx, customerEnv.CustomerRGName, clusterInfo.Name, nil)
+		var adminPollerOptions *api.HcpOpenShiftClustersClientBeginRequestAdminCredentialOptions
+		adminPoller, err := clustersClient.BeginRequestAdminCredential(ctx, customerEnv.CustomerRGName, clusterInfo.Name, adminPollerOptions)
 		Expect(err).To(BeNil())
 		for !adminPoller.Done() {
 			status, err := adminPoller.PollUntilDone(ctx, nil)
@@ -46,9 +51,12 @@ var _ = Describe("Confirm HCPCluster is operational", func() {
 		adminCredentialResponse, err := adminPoller.Result(ctx)
 		Expect(err).To(BeNil())
 		Expect(adminCredentialResponse).ToNot(BeNil())
+		By("Writing kubeconfig file to disk")
 		clusterKubeconfig = *adminCredentialResponse.Kubeconfig
+		err = os.WriteFile("cluster_kubeconfig", []byte(clusterKubeconfig), 0644)
+		Expect(err).To(BeNil())
 		By("Attempting to list projects on cluster and confirm default project is present")
-		oc_command := "KUBECONFIG=" + clusterKubeconfig + " oc get projects"
+		oc_command := "KUBECONFIG=cluster_kubeconfig oc get projects"
 		stdout, stderr, err := cmdline.RunCMD(oc_command)
 		Expect(err).To(BeNil())
 		Expect(stderr).ToNot(ContainSubstring("error"))
