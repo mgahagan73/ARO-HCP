@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -15,8 +14,7 @@ import (
 var _ = Describe("Nodepool operation", func() {
 	var (
 		NodePoolsClient *api.NodePoolsClient
-		//nodePoolName    = os.Getenv("NP_NAME")
-		clusterName     = os.Getenv("CLUSTER_NAME")
+		clusterEnv      *integration.Cluster
 		nodePoolOptions *api.NodePoolsClientGetOptions
 		customerEnv     *integration.CustomerEnv
 		nodePools       *[]integration.Nodepool
@@ -28,6 +26,7 @@ var _ = Describe("Nodepool operation", func() {
 		By("Preparing customer environment values")
 		customerEnv = &e2eSetup.CustomerEnv
 		nodePools = &e2eSetup.Nodepools
+		clusterEnv = &e2eSetup.Cluster
 	})
 
 	It("Get each nodepool from cluster", labels.Medium, func(ctx context.Context) {
@@ -35,7 +34,7 @@ var _ = Describe("Nodepool operation", func() {
 			nps := *nodePools
 			for np := range nps {
 				By("Send get request for nodepool")
-				clusterNodePool, err := NodePoolsClient.Get(ctx, customerEnv.CustomerRGName, clusterName, nps[np].Name, nodePoolOptions)
+				clusterNodePool, err := NodePoolsClient.Get(ctx, customerEnv.CustomerRGName, clusterEnv.Name, nps[np].Name, nodePoolOptions)
 				Expect(err).To(BeNil())
 				Expect(clusterNodePool).ToNot(BeNil())
 				By("Check to see nodepool exists and is successfully provisioned")
