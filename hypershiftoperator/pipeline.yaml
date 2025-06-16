@@ -6,25 +6,21 @@ resourceGroups:
   subscription: '{{ .global.subscription }}'
   steps:
   - name: mirror-image
-    action: Shell
-    command: ../image-sync/on-demand/sync.sh
-    dryRun:
-      variables:
-      - name: DRY_RUN
-        value: "true"
-    variables:
-    - name: TARGET_ACR
+    action: ImageMirror
+    targetACR:
       configRef: 'acr.svc.name'
-    - name: SOURCE_REGISTRY
+    sourceRegistry:
       configRef: hypershift.image.registry
-    - name: REPOSITORY
+    repository:
       configRef: hypershift.image.repository
-    - name: DIGEST
+    digest:
       configRef: hypershift.image.digest
-    - name: PULL_SECRET_KV
+    pullSecretKeyVault:
       configRef: global.keyVault.name
-    - name: PULL_SECRET
+    pullSecretName:
       configRef: imageSync.componentSync.pullSecretName
+    shellIdentity:
+      configRef: aroDevopsMsiId
 - name: '{{ .mgmt.rg  }}'
   subscription: '{{ .mgmt.subscription  }}'
   steps:
@@ -55,3 +51,5 @@ resourceGroups:
       configRef: hypershift.namespace
     - name: HO_ADDITIONAL_INSTALL_ARG
       configRef: hypershift.additionalInstallArg
+    shellIdentity:
+      configRef: aroDevopsMsiId

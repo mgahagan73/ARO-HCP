@@ -11,6 +11,7 @@ PROMPT_TO_CONFIRM = "--confirm-with-what-if"
 endif
 
 PERSIST ?= false
+NPROC ?= $(shell command -v nproc > /dev/null 2>&1 && nproc || echo 4)
 
 MGMT_KUBECONFIG_FILE ?= ${HOME}/.kube/${MGMT_RESOURCEGROUP}.kubeconfig
 SVC_KUBECONFIG_FILE ?= ${HOME}/.kube/${SVC_RESOURCEGROUP}.kubeconfig
@@ -31,15 +32,21 @@ templates := $(wildcard ./templates/*.bicep)
 modules := $(shell find ./modules -name "*.bicep")
 parameters := $(filter-out $(wildcard ./templates/*.tmpl.bicepparam),$(wildcard ./templates/*.bicepparam))
 
-fmt: $(templates:.bicep=.bicep.fmt) $(modules:.bicep=.bicep.fmt) $(parameters:.bicepparam=.biceparam.fmt)
+_fmt: $(templates:.bicep=.bicep.fmt) $(modules:.bicep=.bicep.fmt) $(parameters:.bicepparam=.biceparam.fmt)
+fmt:
+	@echo "Running make fmt in parallel across $(NPROC) cores"
+	@$(MAKE) -j$(NPROC) _fmt
 
-lint: $(templates:.bicep=.bicep.lint) $(modules:.bicep=.bicep.lint) $(parameters:.bicepparam=.biceparam.lint)
+_lint: $(templates:.bicep=.bicep.lint) $(modules:.bicep=.bicep.lint) $(parameters:.bicepparam=.biceparam.lint)
+lint:
+	@echo "Running make lint in parallel across $(NPROC) cores"
+	@$(MAKE) -j$(NPROC) _lint
 
 %.bicep.fmt %.bicepparam.fmt:
-	az bicep format --file $(basename $@)
+	@AZURE_BICEP_CHECK_VERSION=False az bicep format --file $(basename $@) 2>&1 | awk 'NF'
 
 %.bicep.lint %.bicepparam.lint:
-	az bicep lint --file $(basename $@)
+	@AZURE_BICEP_CHECK_VERSION=False az bicep lint --file $(basename $@) 2>&1 | awk 'NF'
 
 feature-registration: # hardcoded to eastus as this is a subscription deployment, not a resource group
 	@az deployment sub create \
@@ -335,7 +342,7 @@ cs-current-user-pg-connect:
 .PHONY: cs-current-user-pg-connect
 
 cs-miwi-pg-connect:
-	@scripts/cs-miwi-pg-connect.sh $(REGIONAL_RESOURCEGROUP) $(CS_PG_NAME) $(CS_MI_NAME) $(CS_NS_NAME) $(CS_SA_NAME)
+	@scripts/cs-miwi-pg-connect.sh $(REGIONAL_RESOURCEGROUP) $(CS_PG_NAME) $(CS_MI_NAME) $(CS_NS_NAME) $(CS_SA_NAME) $(SVC_RESOURCEGROUP)
 .PHONY: cs-miwi-pg-connect
 
 maestro-current-user-pg-connect:
@@ -343,7 +350,7 @@ maestro-current-user-pg-connect:
 .PHONY: maestro-current-user-pg-connect
 
 maestro-miwi-pg-connect:
-	@scripts/cs-miwi-pg-connect.sh $(REGIONAL_RESOURCEGROUP) $(MAESTRO_PG_NAME) "maestro-server" "maestro" "maestro"
+	@scripts/cs-miwi-pg-connect.sh $(REGIONAL_RESOURCEGROUP) $(MAESTRO_PG_NAME) "maestro-server" "maestro" "maestro" $(SVC_RESOURCEGROUP)
 .PHONY: maestro-miwi-pg-connect
 
 #

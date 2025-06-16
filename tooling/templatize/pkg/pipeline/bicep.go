@@ -15,12 +15,14 @@
 package pipeline
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
@@ -28,25 +30,34 @@ import (
 	"github.com/Azure/ARO-Tools/pkg/config"
 )
 
-func transformBicepToARMWhatIfDeployment(ctx context.Context, bicepParameterTemplateFile string, cfg config.Configuration, inputs map[string]any) (*armresources.DeploymentWhatIfProperties, error) {
+func modeFromString(mode string) armresources.DeploymentMode {
+	switch mode {
+	case "Complete":
+		return armresources.DeploymentModeComplete
+	default:
+		return armresources.DeploymentModeIncremental
+	}
+}
+
+func transformBicepToARMWhatIfDeployment(ctx context.Context, bicepParameterTemplateFile, deploymentMode string, cfg config.Configuration, inputs map[string]any) (*armresources.DeploymentWhatIfProperties, error) {
 	template, params, err := transformParameters(ctx, cfg, inputs, bicepParameterTemplateFile)
 	if err != nil {
 		return nil, err
 	}
 	return &armresources.DeploymentWhatIfProperties{
-		Mode:       to.Ptr(armresources.DeploymentModeIncremental),
+		Mode:       to.Ptr(modeFromString(deploymentMode)),
 		Template:   template,
 		Parameters: params,
 	}, nil
 }
 
-func transformBicepToARMDeployment(ctx context.Context, bicepParameterTemplateFile string, cfg config.Configuration, inputs map[string]any) (*armresources.DeploymentProperties, error) {
+func transformBicepToARMDeployment(ctx context.Context, bicepParameterTemplateFile, deploymentMode string, cfg config.Configuration, inputs map[string]any) (*armresources.DeploymentProperties, error) {
 	template, params, err := transformParameters(ctx, cfg, inputs, bicepParameterTemplateFile)
 	if err != nil {
 		return nil, err
 	}
 	return &armresources.DeploymentProperties{
-		Mode:       to.Ptr(armresources.DeploymentModeIncremental),
+		Mode:       to.Ptr(modeFromString(deploymentMode)),
 		Template:   template,
 		Parameters: params,
 	}, nil
@@ -68,11 +79,15 @@ func transformParameters(ctx context.Context, cfg config.Configuration, inputs m
 		return nil, nil, fmt.Errorf("failed to write to target file: %w", err)
 	}
 
-	cmd := exec.CommandContext(ctx, "az", "bicep", "build-params", "-f", bicepParamFile.Name(), "--stdout")
+	var buildParamsCmd = []string{"az", "bicep", "build-params", "-f", bicepParamFile.Name(), "--stdout"}
+	cmd := exec.CommandContext(ctx, buildParamsCmd[0], buildParamsCmd[1:]...)
+	var errBuff bytes.Buffer
+	cmd.Stderr = &errBuff
 	output, err := cmd.Output()
 	if err != nil {
-		combinedOutput, _ := cmd.CombinedOutput()
-		return nil, nil, fmt.Errorf("failed to get output from command: %w\n%s", err, string(combinedOutput))
+		cmdStr := strings.Join(buildParamsCmd, " ")
+		cmdErr := errBuff.String()
+		return nil, nil, fmt.Errorf("failed to get output from command '%s': %w\n%s", cmdStr, err, cmdErr)
 	}
 
 	var result generationResult

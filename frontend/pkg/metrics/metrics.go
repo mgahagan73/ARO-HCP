@@ -22,7 +22,10 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
+	"github.com/Azure/ARO-HCP/frontend/pkg/util"
 	"github.com/Azure/ARO-HCP/internal/database"
 )
 
@@ -101,8 +104,9 @@ func NewSubscriptionCollector(r prometheus.Registerer, dbClient database.DBClien
 // Run starts the loop which reads the subscriptions from the database at
 // periodic intervals (30s) to populate the subscription metrics.
 func (sc *SubscriptionCollector) Run(logger *slog.Logger, stop <-chan struct{}) {
+	ctx := context.Background()
 	// Populate the internal cache.
-	sc.refresh(logger)
+	sc.refresh(ctx, logger)
 
 	t := time.NewTicker(30 * time.Second)
 	for {
@@ -110,19 +114,30 @@ func (sc *SubscriptionCollector) Run(logger *slog.Logger, stop <-chan struct{}) 
 		case <-stop:
 			return
 		case <-t.C:
-			sc.refresh(logger)
+			sc.refresh(ctx, logger)
 		}
 	}
 }
 
-func (sc *SubscriptionCollector) refresh(logger *slog.Logger) {
+func (sc *SubscriptionCollector) refresh(ctx context.Context, logger *slog.Logger) {
+	ctx, span := otel.GetTracerProvider().
+		Tracer(util.TracerName).
+		Start(
+			ctx,
+			"SubscriptionCollector.refresh",
+			trace.WithNewRoot(),
+			trace.WithSpanKind(trace.SpanKindInternal),
+		)
+	defer span.End()
+
 	now := time.Now()
 	defer func() {
 		sc.lastSyncDuration.Set(time.Since(now).Seconds())
 	}()
 
 	sc.refreshCounter.Inc()
-	if err := sc.updateCache(); err != nil {
+	if err := sc.updateCache(ctx); err != nil {
+		span.RecordError(err)
 		logger.Warn("failed to update subscription collector cache", "err", err)
 		sc.lastSyncResult.Set(0)
 		sc.errCounter.Inc()
@@ -133,11 +148,11 @@ func (sc *SubscriptionCollector) refresh(logger *slog.Logger) {
 	sc.lastSuccessSyncTimestamp.SetToCurrentTime()
 }
 
-func (sc *SubscriptionCollector) updateCache() error {
+func (sc *SubscriptionCollector) updateCache(ctx context.Context) error {
 	subscriptions := make(map[string]subscription)
 
 	iter := sc.dbClient.ListAllSubscriptionDocs()
-	for id, sub := range iter.Items(context.Background()) {
+	for id, sub := range iter.Items(ctx) {
 		subscriptions[id] = subscription{
 			id:         id,
 			state:      string(sub.State),

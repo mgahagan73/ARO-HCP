@@ -7,4 +7,8 @@ set -o pipefail
 source "$(dirname "$0")"/common.sh
 source env_vars
 
-correlation_headers | curl -sSi -H @- -X PUT "localhost:8443/subscriptions/${SUBSCRIPTION_ID}?api-version=2.0" --json "{\"state\":\"Registered\", \"registrationDate\": \"now\", \"properties\": { \"tenantId\": \"${TENANT_ID}\"}}"
+if is_int_testing_subscription; then
+    az provider register --namespace "Microsoft.RedHatOpenShift"
+else
+    rp_put_request "${SUBSCRIPTION_RESOURCE_ID}" "{\"state\":\"Registered\", \"registrationDate\": \"now\", \"properties\": { \"tenantId\": \"${TENANT_ID}\"}}" "2.0"
+fi

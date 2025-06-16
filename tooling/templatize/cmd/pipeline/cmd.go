@@ -17,6 +17,8 @@ package pipeline
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/Azure/ARO-HCP/tooling/templatize/cmd/pipeline/validate"
+
 	"github.com/Azure/ARO-HCP/tooling/templatize/cmd/pipeline/inspect"
 	"github.com/Azure/ARO-HCP/tooling/templatize/cmd/pipeline/run"
 )
@@ -24,9 +26,9 @@ import (
 func NewCommand() (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:              "pipeline",
-		Short:            "pipeline",
-		Long:             "pipeline",
+		Short:            "Operate over pipelines in the local environment.",
 		SilenceUsage:     true,
+		SilenceErrors:    true,
 		TraverseChildren: true,
 		CompletionOptions: cobra.CompletionOptions{
 			HiddenDefaultCmd: true,
@@ -36,6 +38,7 @@ func NewCommand() (*cobra.Command, error) {
 	commands := []func() (*cobra.Command, error){
 		run.NewCommand,
 		inspect.NewCommand,
+		validate.NewCommand,
 	}
 	for _, newCmd := range commands {
 		c, err := newCmd()

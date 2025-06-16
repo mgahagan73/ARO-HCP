@@ -42,6 +42,10 @@ lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run -v --build-tags=$(LINT_GOTAGS) $(MODULES)
 .PHONY: lint
 
+lint-fix: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run -v --build-tags=$(LINT_GOTAGS) $(MODULES) --fix
+.PHONY: lint-fix
+
 fmt: $(GOIMPORTS)
 	$(GOIMPORTS) -w -local github.com/Azure/ARO-HCP $(shell go list -f '{{.Dir}}' -m | xargs)
 .PHONY: fmt
@@ -60,7 +64,7 @@ tidy: $(MODULES:/...=.tidy)
 %.tidy:
 	cd $(basename $@) && go mod tidy
 
-all-tidy: tidy fmt yamlfmt licenses
+all-tidy: tidy fmt licenses
 	go work sync
 
 mega-lint:
@@ -68,7 +72,7 @@ mega-lint:
 		-e FILTER_REGEX_EXCLUDE='hypershiftoperator/deploy/crds/|maestro/server/deploy/templates/allow-cluster-service.authorizationpolicy.yaml|acm/deploy/helm/multicluster-engine-config/charts/policy/charts' \
 		-e REPORT_OUTPUT_FOLDER=/tmp/report \
 		-v $${PWD}:/tmp/lint:Z \
-		oxsecurity/megalinter:v8 
+		oxsecurity/megalinter:v8
 .PHONY: mega-lint
 
 #
@@ -174,7 +178,7 @@ services_all = $(join services_svc,services_mgmt)
 # Pipelines section
 # This sections is used to reference pipeline runs and should replace
 # the usage of `svc-deploy.sh` script in the future.
-services_svc_pipelines = istio acrpull backend frontend cluster-service maestro.server observability.tracing
+services_svc_pipelines = backend frontend cluster-service maestro.server observability.tracing
 services_mgmt_pipelines = hypershiftoperator maestro.agent acm
 %.deploy_pipeline:
 	$(eval export dirname=$(subst .,/,$(basename $@)))
@@ -200,3 +204,8 @@ listall:
 
 list:
 	@grep '^[^#[:space:]].*:' Makefile
+
+validate-config-pipelines:
+	$(MAKE) -C tooling/templatize templatize
+	tooling/templatize/templatize pipeline validate --topology-config-file topology.yaml --service-config-file config/config.yaml --dev-mode --dev-region $(shell yq '.environments[] | select(.name == "dev") | .defaults.region' <tooling/templatize/settings.yaml)
+	tooling/templatize/templatize pipeline validate --topology-config-file topology.yaml --service-config-file config/config.msft.yaml

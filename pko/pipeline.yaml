@@ -2,6 +2,57 @@ $schema: "pipeline.schema.v1"
 serviceGroup: Microsoft.Azure.ARO.HCP.PKO
 rolloutName: RP PKO Rollout
 resourceGroups:
+- name: '{{ .global.rg  }}'
+  subscription: '{{ .global.subscription  }}'
+  steps:
+  - name: mirror-image-package
+    action: ImageMirror
+    targetACR:
+      configRef: 'acr.svc.name'
+    sourceRegistry:
+      configRef: pko.imagePackage.registry
+    repository:
+      configRef: pko.imagePackage.repository
+    digest:
+      configRef: pko.imagePackage.digest
+    pullSecretKeyVault:
+      configRef: global.keyVault.name
+    pullSecretName:
+      configRef: imageSync.componentSync.pullSecretName
+    shellIdentity:
+      configRef: aroDevopsMsiId
+  - name: mirror-image-manager
+    action: ImageMirror
+    targetACR:
+      configRef: 'acr.svc.name'
+    sourceRegistry:
+      configRef: pko.imageManager.registry
+    repository:
+      configRef: pko.imageManager.repository
+    digest:
+      configRef: pko.imageManager.digest
+    pullSecretKeyVault:
+      configRef: global.keyVault.name
+    pullSecretName:
+      configRef: imageSync.componentSync.pullSecretName
+    shellIdentity:
+      configRef: aroDevopsMsiId
+  - name: mirror-image-remotephase-manager
+    action: ImageMirror
+    targetACR:
+      configRef: 'acr.svc.name'
+    sourceRegistry:
+      configRef: pko.remotePhaseManager.registry
+    repository:
+      configRef: pko.remotePhaseManager.repository
+    digest:
+      configRef: pko.remotePhaseManager.digest
+    pullSecretKeyVault:
+      configRef: global.keyVault.name
+    pullSecretName:
+      configRef: imageSync.componentSync.pullSecretName
+    shellIdentity:
+      configRef: aroDevopsMsiId
 - name: '{{ .mgmt.rg  }}'
   subscription: '{{ .svc.subscription  }}'
   steps:
@@ -13,6 +64,10 @@ resourceGroups:
       variables:
       - name: DRY_RUN
         value: "true"
+    dependsOn:
+    - mirror-image-package
+    - mirror-image-manager
+    - mirror-image-remotephase-manager
     variables:
     - name: ARO_HCP_IMAGE_ACR
       configRef: acr.svc.name
@@ -30,5 +85,5 @@ resourceGroups:
       configRef: pko.imageManager.digest
     - name: RESOURCEGROUP
       configRef: mgmt.rg
-    - name: PKO_IMAGE_PREFIX_OVERRIDES
-      configRef: pko.imagePrefixOverrides
+    shellIdentity:
+      configRef: aroDevopsMsiId

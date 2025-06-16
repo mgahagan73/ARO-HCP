@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/data/azcosmos"
 	ocmsdk "github.com/openshift-online/ocm-sdk-go"
 	arohcpv1alpha1 "github.com/openshift-online/ocm-sdk-go/arohcp/v1alpha1"
@@ -121,23 +122,21 @@ func (o *operation) setSpanAttributes(span trace.Span) {
 			tracing.ResourceTypeKey.String(o.doc.ExternalID.ResourceType.Type),
 		)
 	}
-
-	switch o.doc.InternalID.Kind() {
-	case arohcpv1alpha1.ClusterKind:
-		span.SetAttributes(tracing.ClusterIDKey.String(o.doc.InternalID.ID()))
-		// TODO(simonpasquier): add node pool attribute when available
-	}
 }
 
 type OperationsScanner struct {
+	location            string
 	dbClient            database.DBClient
 	lockClient          *database.LockClient
-	clusterService      ocm.ClusterServiceClient
+	clusterService      ocm.ClusterServiceClientSpec
 	notificationClient  *http.Client
 	subscriptionsLock   sync.Mutex
 	subscriptions       []string
 	subscriptionChannel chan string
 	subscriptionWorkers sync.WaitGroup
+
+	// Allow overriding timestamps for testing.
+	newTimestamp func() time.Time
 
 	leaderGauge            prometheus.Gauge
 	workerGauge            prometheus.Gauge
@@ -148,13 +147,23 @@ type OperationsScanner struct {
 	subscriptionsByState   *prometheus.GaugeVec
 }
 
-func NewOperationsScanner(dbClient database.DBClient, ocmConnection *ocmsdk.Connection) *OperationsScanner {
+func NewOperationsScanner(location string, dbClient database.DBClient, ocmConnection *ocmsdk.Connection) *OperationsScanner {
 	s := &OperationsScanner{
-		dbClient:           dbClient,
-		lockClient:         dbClient.GetLockClient(),
-		clusterService:     ocm.ClusterServiceClient{Conn: ocmConnection},
+		location:   location,
+		dbClient:   dbClient,
+		lockClient: dbClient.GetLockClient(),
+		clusterService: ocm.NewClusterServiceClientWithTracing(
+			ocm.NewClusterServiceClient(
+				ocmConnection,
+				"",
+				false,
+				false,
+			),
+			tracerName,
+		),
 		notificationClient: http.DefaultClient,
 		subscriptions:      make([]string, 0),
+		newTimestamp:       func() time.Time { return time.Now().UTC() },
 
 		leaderGauge: promauto.With(prometheus.DefaultRegisterer).NewGauge(
 			prometheus.GaugeOpts{
@@ -285,10 +294,15 @@ func (s *OperationsScanner) Run(ctx context.Context, logger *slog.Logger) {
 		go func() {
 			defer s.subscriptionWorkers.Done()
 			for subscriptionID := range s.subscriptionChannel {
+				ctx, span := startRootSpan(ctx, "processOperations")
+				span.SetAttributes(tracing.SubscriptionIDKey.String(subscriptionID))
+
 				subscriptionLogger := logger.With("subscription_id", subscriptionID)
 				s.withSubscriptionLock(ctx, subscriptionLogger, subscriptionID, func(ctx context.Context) {
 					s.processOperations(ctx, subscriptionID, subscriptionLogger)
 				})
+
+				span.End()
 			}
 		}()
 	}
@@ -405,10 +419,7 @@ func (s *OperationsScanner) processSubscriptions(ctx context.Context, logger *sl
 
 // processOperations processes all operations in a single Azure subscription.
 func (s *OperationsScanner) processOperations(ctx context.Context, subscriptionID string, logger *slog.Logger) {
-	ctx, span := startRootSpan(ctx, "processOperations")
-	defer span.End()
 	defer s.updateOperationMetrics(processOperationsLabel)()
-	span.SetAttributes(tracing.SubscriptionIDKey.String(subscriptionID))
 
 	pk := database.NewPartitionKey(subscriptionID)
 
@@ -431,6 +442,7 @@ func (s *OperationsScanner) processOperations(ctx context.Context, subscriptionI
 				),
 			})
 	}
+	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(tracing.ProcessedItemsKey.Int(n))
 
 	err := iterator.GetError()
@@ -481,6 +493,17 @@ func (s *OperationsScanner) pollClusterOperation(ctx context.Context, op operati
 	if err != nil {
 		var ocmError *ocmerrors.Error
 		if errors.As(err, &ocmError) && ocmError.Status() == http.StatusNotFound && op.doc.Request == database.OperationRequestDelete {
+			// Update the Cosmos DB billing document with a deletion timestamp.
+			// Do this before calling setDeleteOperationAsCompleted so that in
+			// case of error the backend will retry by virtue of the operation
+			// document still having a non-terminal status.
+			err = s.markBillingDocumentDeleted(ctx, op)
+			if err != nil {
+				s.recordOperationError(ctx, pollClusterOperationLabel, err)
+				op.logger.Error(fmt.Sprintf("Failed to handle a completed deletion: %v", err))
+				return
+			}
+
 			err = s.setDeleteOperationAsCompleted(ctx, op)
 			if err != nil {
 				s.recordOperationError(ctx, pollClusterOperationLabel, err)
@@ -499,6 +522,19 @@ func (s *OperationsScanner) pollClusterOperation(ctx context.Context, op operati
 		s.recordOperationError(ctx, pollClusterOperationLabel, err)
 		op.logger.Warn(err.Error())
 		return
+	}
+
+	// Create a Cosmos DB billing document if a Create operation is successful.
+	// Do this before calling updateOperationStatus so that in case of error the
+	// backend will retry by virtue of the operation document still having a non-
+	// terminal status.
+	if op.doc.Request == database.OperationRequestCreate && opStatus == arm.ProvisioningStateSucceeded {
+		err = s.createBillingDocument(ctx, op)
+		if err != nil {
+			s.recordOperationError(ctx, pollClusterOperationLabel, err)
+			op.logger.Error(fmt.Sprintf("Failed to handle a completed creation: %v", err))
+			return
+		}
 	}
 
 	err = s.updateOperationStatus(ctx, op, opStatus, opError)
@@ -659,9 +695,11 @@ loop:
 // be canceled.
 func (s *OperationsScanner) withSubscriptionLock(ctx context.Context, logger *slog.Logger, subscriptionID string, fn func(ctx context.Context)) {
 	timeout := s.lockClient.GetDefaultTimeToLive()
+	span := trace.SpanFromContext(ctx)
 	lock, err := s.lockClient.AcquireLock(ctx, subscriptionID, &timeout)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed to acquire lock: %v", err))
+		span.RecordError(err)
 		return
 	}
 
@@ -675,6 +713,7 @@ func (s *OperationsScanner) withSubscriptionLock(ctx context.Context, logger *sl
 			// Failure here is non-fatal but still log the error.
 			// The lock's TTL ensures it will be released eventually.
 			logger.Warn(fmt.Sprintf("Failed to release lock: %v", nonFatalErr))
+			span.RecordError(nonFatalErr)
 		}
 	}
 }
@@ -727,7 +766,7 @@ func (s *OperationsScanner) patchOperationDocument(ctx context.Context, op opera
 	condition := fmt.Sprintf("FROM doc WHERE doc%s != '%s'", scalar, opStatus)
 
 	patchOperations.SetCondition(condition)
-	patchOperations.SetLastTransitionTime(time.Now().UTC())
+	patchOperations.SetLastTransitionTime(s.newTimestamp())
 	patchOperations.SetStatus(opStatus)
 	if opError != nil {
 		patchOperations.SetError(opError)
@@ -818,6 +857,52 @@ func (s *OperationsScanner) postAsyncNotification(ctx context.Context, op operat
 	}
 
 	return nil
+}
+
+// createBillingDocument creates a Cosmos DB document in the Billing
+// container for a newly-created cluster.
+func (s *OperationsScanner) createBillingDocument(ctx context.Context, op operation) error {
+	csCluster, err := s.clusterService.GetCluster(ctx, op.doc.InternalID)
+	if err != nil {
+		return err
+	}
+
+	doc := database.NewBillingDocument(op.doc.ExternalID)
+	doc.CreationTime = csCluster.CreationTimestamp()
+	doc.Location = s.location
+	doc.TenantID = op.doc.TenantID
+	doc.ManagedResourceGroup = fmt.Sprintf(
+		"/%s/%s/%s/%s",
+		azcorearm.SubscriptionResourceType.Type,
+		doc.SubscriptionID,
+		azcorearm.ResourceGroupResourceType.Type,
+		csCluster.Azure().ManagedResourceGroupName())
+
+	err = s.dbClient.CreateBillingDoc(ctx, doc)
+	if err == nil {
+		op.logger.Info("Updated billing for cluster creation")
+	}
+
+	return err
+}
+
+// markBillingDocumentDeleted patches a Cosmos DB document in the Billing
+// container to add a deletion timestamp.
+func (s *OperationsScanner) markBillingDocumentDeleted(ctx context.Context, op operation) error {
+	var patchOperations database.BillingDocumentPatchOperations
+
+	patchOperations.SetDeletionTime(s.newTimestamp())
+
+	err := s.dbClient.PatchBillingDoc(ctx, op.doc.ExternalID, patchOperations)
+	if err == nil {
+		op.logger.Info("Updated billing for cluster deletion")
+	} else if database.IsResponseError(err, http.StatusNotFound) {
+		// Log the error but proceed with normal processing.
+		op.logger.Info("No billing document found")
+		err = nil
+	}
+
+	return err
 }
 
 // convertClusterStatus attempts to translate a ClusterStatus object from

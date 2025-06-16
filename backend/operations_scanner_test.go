@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
@@ -68,7 +69,7 @@ func TestSetDeleteOperationAsCompleted(t *testing.T) {
 	}
 
 	// Placeholder InternalID for NewOperationDocument
-	internalID, err := ocm.NewInternalID("/api/clusters_mgmt/v1/clusters/placeholder")
+	internalID, err := ocm.NewInternalID("/api/aro_hcp/v1alpha1/clusters/placeholder")
 	require.NoError(t, err)
 
 	resourceID, err := azcorearm.ParseResourceID(api.TestClusterResourceID)
@@ -95,6 +96,7 @@ func TestSetDeleteOperationAsCompleted(t *testing.T) {
 			scanner := &OperationsScanner{
 				dbClient:           mockDBClient,
 				notificationClient: server.Client(),
+				newTimestamp:       func() time.Time { return time.Now().UTC() },
 			}
 
 			operationDoc := database.NewOperationDocument(database.OperationRequestDelete, resourceID, internalID)
@@ -229,7 +231,7 @@ func TestUpdateOperationStatus(t *testing.T) {
 	}
 
 	// Placeholder InternalID for NewOperationDocument
-	internalID, err := ocm.NewInternalID("/api/clusters_mgmt/v1/clusters/placeholder")
+	internalID, err := ocm.NewInternalID("/api/aro_hcp/v1alpha1/clusters/placeholder")
 	require.NoError(t, err)
 
 	resourceID, err := azcorearm.ParseResourceID(api.TestClusterResourceID)
@@ -256,6 +258,7 @@ func TestUpdateOperationStatus(t *testing.T) {
 			scanner := &OperationsScanner{
 				dbClient:           mockDBClient,
 				notificationClient: server.Client(),
+				newTimestamp:       func() time.Time { return time.Now().UTC() },
 			}
 
 			operationDoc := database.NewOperationDocument(database.OperationRequestCreate, resourceID, internalID)
@@ -346,7 +349,7 @@ func TestUpdateOperationStatus(t *testing.T) {
 func TestConvertClusterStatus(t *testing.T) {
 	// FIXME These tests are all tentative until the new "/api/aro_hcp/v1" OCM
 	//       API is available. What's here now is a best guess at converting
-	//       ClusterStatus from the "/api/clusters_mgmt/v1" API.
+	//       ClusterStatus from the "/api/aro_hcp/v1alpha1" API.
 	//
 	//       Also note, the particular error codes and messages to expect from
 	//       Cluster Service is complete guesswork at the moment so we're only

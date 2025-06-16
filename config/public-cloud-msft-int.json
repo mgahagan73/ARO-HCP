@@ -22,7 +22,7 @@
   "aroDevopsMsiId": "/subscriptions/5299e6b7-b23b-46c8-8277-dc1147807117/resourcegroups/global-shared-resources/providers/Microsoft.ManagedIdentity/userAssignedIdentities/global-ev2-identity",
   "backend": {
     "image": {
-      "digest": "sha256:02a32af8d34c5725d0096ee7f94adf2ef151d0634e8682fe7517e6f9ebba9bdc",
+      "digest": "sha256:529b49155e14c7bef100998d8fd0c6057856d138356cd3bb48eb9e1fae7c8e29",
       "registry": "arohcpsvcdev.azurecr.io",
       "repository": "arohcpbackend"
     },
@@ -41,36 +41,36 @@
   "clustersService": {
     "azureOperatorsManagedIdentities": {
       "cloudControllerManager": {
-        "roleName": "Azure Red Hat OpenShift Cloud Controller Manager"
+        "roleNames": "Azure Red Hat OpenShift Cloud Controller Manager"
       },
       "cloudNetworkConfig": {
-        "roleName": "Azure Red Hat OpenShift Network Operator"
+        "roleNames": "Azure Red Hat OpenShift Network Operator"
       },
       "clusterApiAzure": {
-        "roleName": "Azure Red Hat OpenShift Hosted Control Planes Cluster API Provider"
+        "roleNames": "Azure Red Hat OpenShift Hosted Control Planes Cluster API Provider"
       },
       "controlPlane": {
-        "roleName": "Azure Red Hat OpenShift Hosted Control Planes Control Plane Operator"
+        "roleNames": "Azure Red Hat OpenShift Hosted Control Planes Control Plane Operator"
       },
       "diskCsiDriver": {
-        "roleName": "Azure Red Hat OpenShift Disk Storage Operator"
+        "roleNames": "Azure Red Hat OpenShift Disk Storage Operator"
       },
       "fileCsiDriver": {
-        "roleName": "Azure Red Hat OpenShift File Storage Operator"
+        "roleNames": "Azure Red Hat OpenShift File Storage Operator"
       },
       "imageRegistry": {
-        "roleName": "Azure Red Hat OpenShift Image Registry Operator"
+        "roleNames": "Azure Red Hat OpenShift Image Registry Operator"
       },
       "ingress": {
-        "roleName": "Azure Red Hat OpenShift Cluster Ingress Operator"
+        "roleNames": "Azure Red Hat OpenShift Cluster Ingress Operator"
       },
       "kms": {
-        "roleName": "Key Vault Crypto User"
+        "roleNames": "Key Vault Crypto User"
       }
     },
     "environment": "arohcpint",
     "image": {
-      "digest": "sha256:7d6981f42a7bdfc1d75298918afbcc7fb698f4f67800538ab7d38ebddb284917",
+      "digest": "sha256:aac9226ea3c3712918a04b125e4ef765c8bc8e6968c0e3db05c6e662aa497282",
       "registry": "quay.io",
       "repository": "app-sre/uhc-clusters-service"
     },
@@ -124,7 +124,7 @@
       "zoneRedundantMode": "Auto"
     },
     "image": {
-      "digest": "sha256:aa1ae769ca6318aab0c9fe6cb2772416430aa5adb69eb69623d6198e580e08c3",
+      "digest": "sha256:636447234db57fd6da3ee1894e54ef8668bb7073e9c84c24cbd7296d1587eb4c",
       "registry": "arohcpsvcdev.azurecr.io",
       "repository": "arohcpfrontend"
     },
@@ -225,7 +225,7 @@
       "private": false
     },
     "image": {
-      "digest": "sha256:71788add6afc26829ef75432714fa3052c7dbc1d62d0002ff4c736a8038c18f4",
+      "digest": "sha256:00e0aa8746725c257b370bdd530ef961eb9b88f8c583d2c848b99264d073d5f3",
       "registry": "quay.io",
       "repository": "redhat-user-workloads/maestro-rhtap-tenant/maestro/maestro"
     },
@@ -368,16 +368,20 @@
   "oidcZoneRedundantMode": "Auto",
   "pko": {
     "imageManager": {
-      "digest": "sha256:04b280a2dfcd89c433db32106e0f9a80b978c2513b979865df7a66dc67617e90",
-      "registry": "arohcpsvcdev.azurecr.io",
+      "digest": "sha256:f2f24e36b097da44f4b598f930cce6c1658be3381d21d7fdf92d26b4dadd1a2f",
+      "registry": "quay.io",
       "repository": "package-operator/package-operator-manager"
     },
     "imagePackage": {
-      "digest": "sha256:a541ddb20875264f1995c38b1dd66de052547c2a861001b3b49c2a56b7e06e0d",
-      "registry": "arohcpsvcdev.azurecr.io",
+      "digest": "sha256:7e4f7c28650951bbbd73fb42b4780883118d6289f19a3fed4ba5831d32f5f795",
+      "registry": "quay.io",
       "repository": "package-operator/package-operator-package"
     },
-    "imagePrefixOverrides": "quay.io/package-operator=arohcpsvcdev.azurecr.io/package-operator"
+    "remotePhaseManager": {
+      "digest": "sha256:f15aa252f69357fbdb2a1b5141badfe9c1f036c800dbfed9d28dc583044e4b4e",
+      "registry": "quay.io",
+      "repository": "package-operator/remote-phase-manager"
+    }
   },
   "region": "southwestus",
   "regionRG": "southwestus-shared-resources",
