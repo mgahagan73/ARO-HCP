@@ -107,6 +107,11 @@ To prevent repetitive declarations of such values, templating can be used within
 - **`ctx.stamp`**: The numerical value to enumerate the instances of management clusters.
   - Relates to the [EV2 stamp](terminology.md#ev2-stamp).
   - Usually starts with 1
+- **`ev2.${ev2 central config config variable}$`**: Additional variables provided by the EV2 central configuration
+  - The ARO-Tools repository provides a subset of the real EV2 central configuration as an [additional region agnostic configuration layer](https://github.com/Azure/ARO-Tools/blob/main/pkg/config/ev2config/config.yaml) which works also in RH DEV environment deployments.
+  - Variable paths are prefixed with `ev2.` to avoid conflicts with other configuration variables, e.g. `ev2.availabilityZoneCount`
+  - Refer to the ARO-Tools [configuration README](https://github.com/Azure/ARO-Tools/blob/main/pkg/config/ev2config/README.md) to learn more about supported EV2 variables and how to add additional ones.
+  - EV2 variables can be used for tooling scripts by looking them up with `tooling/templatize/templatize ev2lookup`.
 
 Using these variables, configuration files can remain mostly **region-agnostic**, avoiding almost all regional overrides.
 
@@ -128,24 +133,6 @@ defaults:
 - **Be aware of the scope of name uniqueness**: Understand the scope of uniqueness for resource names and use appropriate measures like resourcename prefixes and templating. For example
   - Key Vault names must be unique within an Azure cloud - this is an Azure restriction
   - management cluster names must be unique within a deployment environment - this is an architectural restriction
-
-## Materializing Configuration
-
-With multiple layers of overrides and templating in use, it can be difficult to determine the resulting configuration for a specific cloud/environment/region combination. To address this, tooling is available to materialize the configuration for a given deployment scenario.
-
-- For a quick way to inspect the public cloud configuration of `config/config.yaml`, use:
-
-  ```sh
-  ./templatize.sh $deployenv
-  ```
-
-- For more control specify a custom configuration file, cloud, and region as follows:
-
-  ```sh
-  CONFIG_FILE=path_to_config.yaml ./templatize.sh $deployenv -c $cloud -r $region
-  ```
-
-- PR checks require materialized configurations for well-known cloud/environment/region combinations to be present in pull requests. These well-known combinations are specified in the [config/Makefile](../config/Makefile) and represent important deployment targets for the project. Failing to run `make -C config materialize` and commit the result will cause the PR checks to fail.
 
 ## Using Configuration
 

@@ -17,14 +17,17 @@ package validate
 import (
 	"context"
 	"fmt"
-	"log/slog"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/Azure/ARO-Tools/pkg/config"
 	"github.com/Azure/ARO-Tools/pkg/config/ev2config"
 	"github.com/Azure/ARO-Tools/pkg/types"
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/Azure/ARO-Tools/pkg/topology"
 )
@@ -41,6 +44,7 @@ func BindValidationOptions(opts *RawValidationOptions, cmd *cobra.Command) error
 	cmd.Flags().StringVar(&opts.TopologyFile, "topology-config-file", opts.TopologyFile, "Path to the topology configuration file.")
 	cmd.Flags().BoolVar(&opts.DevMode, "dev-mode", opts.DevMode, "Validate just one region, using public production Ev2 contexts.")
 	cmd.Flags().StringVar(&opts.DevRegion, "dev-region", opts.DevRegion, "Region to use for dev mode validation.")
+	cmd.Flags().BoolVar(&opts.OnlyChanged, "only-changed", opts.OnlyChanged, "Validate only pipelines whose files have uncommitted changes.")
 
 	for _, flag := range []string{
 		"service-config-file",
@@ -59,6 +63,7 @@ type RawValidationOptions struct {
 	TopologyFile      string
 	DevMode           bool
 	DevRegion         string
+	OnlyChanged       bool
 }
 
 // validatedValidationOptions is a private wrapper that enforces a call of Validate() before Complete() can be invoked.
@@ -78,6 +83,7 @@ type completedValidationOptions struct {
 	Config      config.ConfigProvider
 	DevMode     bool
 	DevRegion   string
+	OnlyChanged bool
 }
 
 type ValidationOptions struct {
@@ -127,20 +133,40 @@ func (o *ValidatedValidationOptions) Complete() (*ValidationOptions, error) {
 			Config:      c,
 			DevMode:     o.DevMode,
 			DevRegion:   o.DevRegion,
+			OnlyChanged: o.OnlyChanged,
 		},
 	}, nil
 }
 
 func (opts *ValidationOptions) ValidatePipelineConfigReferences(ctx context.Context) error {
+	logger, err := logr.FromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create logger: %w", err)
+	}
+	shouldHandleService := func(string) bool {
+		return true
+	}
+	if opts.OnlyChanged {
+		changedServices, err := DetermineChangedServices(ctx, opts.TopologyDir, opts.Topology)
+		if err != nil {
+			return fmt.Errorf("failed to determine changed services: %w", err)
+		}
+		shouldHandleService = func(serviceGroup string) bool {
+			return changedServices.Has(serviceGroup)
+		}
+	}
+
 	ev2Context, err := ev2config.AllContexts()
 	if err != nil {
 		return fmt.Errorf("failed to load ev2 contexts: %w", err)
 	}
 	group, _ := errgroup.WithContext(ctx)
 	for cloud, environments := range opts.Config.AllContexts() {
-		slog.Info("Validating cloud.", "cloud", cloud)
+		cloudLogger := logger.WithValues("cloud", cloud)
+		cloudLogger.Info("Validating cloud.", "cloud", cloud)
 		for environment := range environments {
-			slog.Info("Validating environment.", "cloud", cloud, "environment", environment)
+			envLogger := cloudLogger.WithValues("environment", environment)
+			envLogger.Info("Validating environment.")
 			var regions []string
 			if opts.DevMode {
 				regions = []string{opts.DevRegion}
@@ -148,11 +174,12 @@ func (opts *ValidationOptions) ValidatePipelineConfigReferences(ctx context.Cont
 				regions = ev2Context[cloud]
 			}
 			for _, region := range regions {
-				slog.Info("Validating region.", "cloud", cloud, "environment", environment, "region", region)
+				regionLogger := envLogger.WithValues("region", region)
+				regionLogger.Info("Validating region.")
 				prefix := fmt.Sprintf("config[%s][%s][%s]:", cloud, environment, region)
 				ev2Cloud := cloud
 				if opts.DevMode {
-					ev2Cloud = "public"
+					ev2Cloud = "public" // TODO: load from settings
 				}
 				ev2Cfg, err := ev2config.ResolveConfig(ev2Cloud, region)
 				if err != nil {
@@ -199,7 +226,7 @@ func (opts *ValidationOptions) ValidatePipelineConfigReferences(ctx context.Cont
 				}
 
 				for _, service := range opts.Topology.Services {
-					if err := handleService(prefix, group, opts.TopologyDir, service, cfg); err != nil {
+					if err := handleService(regionLogger, prefix, group, opts.TopologyDir, service, cfg, shouldHandleService); err != nil {
 						return err
 					}
 				}
@@ -209,19 +236,18 @@ func (opts *ValidationOptions) ValidatePipelineConfigReferences(ctx context.Cont
 	return group.Wait()
 }
 
-func handleService(context string, group *errgroup.Group, baseDir string, service topology.Service, cfg config.Configuration) error {
+func handleService(logger logr.Logger, context string, group *errgroup.Group, baseDir string, service topology.Service, cfg config.Configuration, shouldHandleService func(string) bool) error {
 	group.Go(func() error {
-		pipelinePath := service.PipelinePath
-		if pipelinePath == "" {
-			pipelinePath = service.Metadata["pipeline"]
+		if !shouldHandleService(service.ServiceGroup) {
+			return nil
 		}
-		pipeline, err := types.NewPipelineFromFile(filepath.Join(baseDir, pipelinePath), cfg)
+		pipeline, err := types.NewPipelineFromFile(filepath.Join(baseDir, service.PipelinePath), cfg)
 		if err != nil {
-			return fmt.Errorf("%s: %s: failed to parse pipeline %s: %w", context, service.ServiceGroup, pipelinePath, err)
+			return fmt.Errorf("%s: %s: failed to parse pipeline %s: %w", context, service.ServiceGroup, service.PipelinePath, err)
 		}
 
 		type variableRef struct {
-			variable types.Variable
+			variable types.Value
 			ref      string
 		}
 		var variables []variableRef
@@ -235,7 +261,7 @@ func handleService(context string, group *errgroup.Group, baseDir string, servic
 					}
 					for k, variable := range specificStep.Variables {
 						variables = append(variables, variableRef{
-							variable: variable,
+							variable: variable.Value,
 							ref:      fmt.Sprintf("resourceGroups[%d].steps[%d].variables[%d]", i, j, k),
 						})
 					}
@@ -250,7 +276,7 @@ func handleService(context string, group *errgroup.Group, baseDir string, servic
 					}
 					for k, variable := range specificStep.Variables {
 						variables = append(variables, variableRef{
-							variable: variable,
+							variable: variable.Value,
 							ref:      fmt.Sprintf("resourceGroups[%d].steps[%d].variables[%d]", i, j, k),
 						})
 					}
@@ -382,13 +408,95 @@ func handleService(context string, group *errgroup.Group, baseDir string, servic
 				}
 			}
 		}
-		slog.Info("Validated service.", "service", service.ServiceGroup)
+		logger.Info("Validated service.", "service", service.ServiceGroup)
 		return nil
 	})
 	for _, child := range service.Children {
-		if err := handleService(context, group, baseDir, child, cfg); err != nil {
+		if err := handleService(logger, context, group, baseDir, child, cfg, shouldHandleService); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// DetermineChangedServices uses `git diff` output to try to guess which services have changes in the working tree.
+// Couple of notes:
+//   - the topology file itself doesn't have to be at the root of the repo
+//   - paths in the topology file are relative to its dir
+//   - `git diff` output is relative to the repo root
+//
+// Therefore, we first compute the relative path from the repo root to the topology file, so that we can prepend it
+// to the pipeline paths and figure out where each pipeline is relative to the root of the repo, so we can detect
+// diffs that touch it.
+//
+// Note as well that this approach will only catch diffs that are directly in the pipeline's directory - any shared
+// files or other dependencies that change won't be captured. This approach is meant to be a nice utility and best-
+// effort, not run in CI, so this is acceptable.
+//
+// We may choose to improve this algorithm in the future to look for `.bicep` references to paths outside the dir
+// or relative paths in the `pipeline.yaml` itself.
+func DetermineChangedServices(ctx context.Context, topologyDir string, t *topology.Topology) (sets.Set[string], error) {
+	// this will be <repo-root-path>/<topology-relative-path>/topology.yaml
+	topologyDirAbsPath, err := filepath.Abs(topologyDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine absolute path of topology: %w", err)
+	}
+
+	// this will be <repo-root-path>
+	var gitAbsPath string
+	{
+		cmd := exec.CommandContext(ctx, "git", "rev-parse", "--show-toplevel")
+		out, err := cmd.Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to run git rev-parse: %w; output: %s", err, string(out))
+		}
+		gitAbsPath = strings.TrimSpace(string(out))
+	}
+
+	topologyDirRelPath, err := filepath.Rel(gitAbsPath, topologyDirAbsPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine relative path of topology: %w", err)
+	}
+
+	// these will be relative to the <repo-root-path>
+	var files []string
+	{
+		cmd := exec.CommandContext(ctx, "git", "diff", "--name-only")
+		out, err := cmd.Output()
+		if err != nil {
+			return nil, fmt.Errorf("failed to run git diff: %w; output: %s", err, string(out))
+		}
+		for _, line := range strings.Split(string(out), "\n") {
+			files = append(files, strings.TrimSpace(line))
+		}
+	}
+	w := walker{
+		files:              files,
+		topologyDirRelPath: topologyDirRelPath,
+		changed:            sets.New[string](),
+	}
+	for _, service := range t.Services {
+		w.walk(service)
+	}
+	return w.changed, nil
+}
+
+type walker struct {
+	files              []string
+	topologyDirRelPath string
+	changed            sets.Set[string]
+}
+
+func (w *walker) walk(service topology.Service) {
+	for _, child := range service.Children {
+		w.walk(child)
+	}
+
+	serviceDir := filepath.Join(w.topologyDirRelPath, filepath.Dir(service.PipelinePath))
+
+	for _, file := range w.files {
+		if strings.HasPrefix(file, serviceDir) {
+			w.changed.Insert(service.ServiceGroup)
+		}
+	}
 }

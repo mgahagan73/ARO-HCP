@@ -42,8 +42,10 @@ func TestInspectVars(t *testing.T) {
 				},
 				Command: "echo hello",
 				Variables: []types.Variable{{
-					Name:      "FOO",
-					ConfigRef: "foo",
+					Name: "FOO",
+					Value: types.Value{
+						ConfigRef: "foo",
+					},
 				}},
 			},
 			options: &InspectOptions{
@@ -63,8 +65,10 @@ func TestInspectVars(t *testing.T) {
 				},
 				Command: "echo hello",
 				Variables: []types.Variable{{
-					Name:      "FOO",
-					ConfigRef: "foo",
+					Name: "FOO",
+					Value: types.Value{
+						ConfigRef: "foo",
+					},
 				}},
 			},
 			options: &InspectOptions{
@@ -133,16 +137,21 @@ func TestInspect(t *testing.T) {
 		},
 		},
 	}
-	opts := NewInspectOptions(config.Configuration{}, "", "step1", "scope", "format", new(bytes.Buffer))
 
-	opts.ScopeFunctions = map[string]StepInspectScope{
-		"scope": func(ctx context.Context, p *types.Pipeline, s types.Step, o *InspectOptions) error {
-			assert.Equal(t, s.StepName(), "step1")
-			return nil
+	err := Inspect(&p, context.Background(), &InspectOptions{
+		Scope:         "scope",
+		Format:        "format",
+		Step:          "step1",
+		Region:        "",
+		Configuration: config.Configuration{},
+		ScopeFunctions: map[string]StepInspectScope{
+			"scope": func(ctx context.Context, p *types.Pipeline, s types.Step, o *InspectOptions) error {
+				assert.Equal(t, s.StepName(), "step1")
+				return nil
+			},
 		},
-	}
-
-	err := Inspect(&p, context.Background(), opts)
+		OutputFile: new(bytes.Buffer),
+	})
 	assert.NoError(t, err)
 }
 
@@ -160,8 +169,14 @@ func TestInspectWrongScope(t *testing.T) {
 		},
 		},
 	}
-	opts := NewInspectOptions(config.Configuration{}, "", "step1", "foo", "format", new(bytes.Buffer))
 
-	err := Inspect(&p, context.Background(), opts)
+	err := Inspect(&p, context.Background(), &InspectOptions{
+		Scope:         "foo",
+		Format:        "format",
+		Step:          "step1",
+		Region:        "",
+		Configuration: config.Configuration{},
+		OutputFile:    new(bytes.Buffer),
+	})
 	assert.Error(t, err, "unknown inspect scope \"foo\"")
 }

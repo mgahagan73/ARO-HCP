@@ -1,10 +1,24 @@
-$schema: config.schema.json
-defaults:
-# don't add any defaults here. only the clouds section is used for configuration
-# global defaults can be found in https://github.com/Azure/ARO-HCP/blob/main/config/config.yaml
 clouds:
   public:
     defaults:
+      tenantId: 33e01921-4d64-4f8c-a055-5bdaffd5e33d
+      ev2:
+        assistedId:
+          certificate: https://aro-ev2-admin-prod-kv.vault.azure.net/secrets/aro-ev2-admin-prod-cert
+          applicationId: 931fc462-30d1-4f16-b028-6032147e9a78
+      geneva:
+        principalId: 92f388ee-7cfe-4aa2-95da-95fd8522f6b4 # TODO: input chaining
+        resourceContributor: 2a79f82f-7cc2-46d1-9b2e-1fda89c71bab # TODO: input chaining
+        logs:
+          typeName: Microsoft.Geneva.Logs/ConfigureLogsAccount
+          environment: DiagnosticsProd
+          cluster:
+            accountCert: 'https://aro-geneva-public-prod.vault.azure.net/secrets/aroclusterlogs-admin' # TODO: input chaining
+          rp:
+            accountCert: 'https://aro-geneva-public-prod.vault.azure.net/secrets/arorplogs-admin' # TODO: input chaining
+      kusto:
+        resourceGroup: ""
+        cluster: ""
       releaseApprover:
         id: feca6a27-8f05-4abe-b9e4-e1185f5833ab
         name: TM-AzureRedHatOpenShift-HCP-Leads
@@ -89,13 +103,31 @@ clouds:
       int:
         # this is the MSFT INT environment
         defaults:
+          tenantId: 72f988bf-86f1-41af-91ab-2d7cd011db47
+          ev2:
+            assistedId:
+              certificate: https://aro-ev2-admin-int-kv.vault.azure.net/secrets/aro-ev2-admin-int-cert
+              applicationId: 0cfe7b03-3a43-4f68-84a0-2a4d9227d5ee
+          geneva:
+            principalId: 3c2f3efc-0197-4fd5-b566-0e3f07a17f0c # TODO: input chaining
+            resourceContributor: 9f15f5f5-77bd-413a-aa88-4b9c68b1e7bc # TODO: input chaining
+            logs:
+              typeName: Microsoft.Geneva.Logs/ConfigureLogsTestAccount
+              environment: Test
+              cluster:
+                accountCert: 'https://aro-geneva-public-int.vault.azure.net/secrets/aroclusterlogs-admin' # TODO: input chaining
+              rp:
+                accountCert: 'https://aro-geneva-public-int.vault.azure.net/secrets/arorplogs-admin' # TODO: input chaining
+          kusto:
+            resourceGroup: aro-kusto-public-int-us
+            cluster: aroINT
           # Region for global resources in INT is uksouth
           global:
             safeDnsIntAppObjectId: "c54b6bce-1cd3-4d37-bebe-aa22f4ce4fbc"
           # Cluster Service
           clustersService:
             image:
-              digest: sha256:aac9226ea3c3712918a04b125e4ef765c8bc8e6968c0e3db05c6e662aa497282
+              digest: sha256:3c603f59797f7602aa59f888a8830d414932c7d6590c8721e3cdde85a9d3cb31
           # ACR Pull
           acrPull:
             image:
@@ -142,11 +174,11 @@ clouds:
               systemAgentPool:
                 minCount: 1
                 maxCount: 4
-                azCount: 3
+                azCount: {{ .ev2.availabilityZoneCount }}
               userAgentPool:
                 minCount: 1
                 maxCount: 12
-                azCount: 3
+                azCount: {{ .ev2.availabilityZoneCount }}
               clusterOutboundIPAddressIPTags: "FirstPartyUsage:/NonProd"
               kubernetesVersion: 1.31.8
             logs:
@@ -205,7 +237,8 @@ clouds:
           armHelperCertName: intArmHelperCert
           # Grafana
           monitoring:
-            grafanaAdminGroupPrincipalId: "2fdb57d4-3fd3-415d-b604-1d0e37a188fe" # Azure Red Hat OpenShift MSFT Engineering.
+            grafanaRoles: >-
+              2fdb57d4-3fd3-415d-b604-1d0e37a188fe/Group/Admin
           # Global MSI
           aroDevopsMsiId: "/subscriptions/5299e6b7-b23b-46c8-8277-dc1147807117/resourcegroups/global-shared-resources/providers/Microsoft.ManagedIdentity/userAssignedIdentities/global-ev2-identity"
           # Cert Officer used for KV signer registration
@@ -221,7 +254,7 @@ clouds:
           # Cluster Service
           clustersService:
             image:
-              digest: sha256:aac9226ea3c3712918a04b125e4ef765c8bc8e6968c0e3db05c6e662aa497282
+              digest: sha256:3c603f59797f7602aa59f888a8830d414932c7d6590c8721e3cdde85a9d3cb31
           # ACR Pull
           acrPull:
             image:
@@ -323,7 +356,8 @@ clouds:
             manage: true
           # Grafana
           monitoring:
-            grafanaAdminGroupPrincipalId: '' # EV2 currently only allows service principal role assignment, so leave it empty for now
+            # EV2 currently only allows service principal role assignment, so leave it empty for now
+            grafanaRoles: ""
           # Global MSI
           aroDevopsMsiId: '/subscriptions/9a53d80e-dae0-4c8a-af90-30575d253127/resourceGroups/global-shared-resources/providers/Microsoft.ManagedIdentity/userAssignedIdentities/global-ev2-identity'
           # Cert Officer used for KV signer registration

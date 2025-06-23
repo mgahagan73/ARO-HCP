@@ -7,7 +7,6 @@ GOTAGS?='containers_image_openpgp'
 LINT_GOTAGS?='${GOTAGS},E2Etests'
 TOOLS_BIN_DIR := tooling/bin
 DEPLOY_ENV ?= pers
-CLOUD ?= dev
 
 .DEFAULT_GOAL := all
 
@@ -111,6 +110,10 @@ infra.mgmt.aks.kubeconfigfile:
 	@cd dev-infrastructure && DEPLOY_ENV=$(DEPLOY_ENV) make -s mgmt.aks.kubeconfigfile
 .PHONY: infra.mgmt.aks.kubeconfigfile
 
+infra.monitoring:
+	@cd dev-infrastructure && DEPLOY_ENV=$(DEPLOY_ENV) make monitoring
+.PHONY: infra.monitoring
+
 infra.all:
 	@cd dev-infrastructure && DEPLOY_ENV=$(DEPLOY_ENV) make infra
 .PHONY: infra.all
@@ -180,23 +183,17 @@ services_all = $(join services_svc,services_mgmt)
 # the usage of `svc-deploy.sh` script in the future.
 services_svc_pipelines = backend frontend cluster-service maestro.server observability.tracing
 services_mgmt_pipelines = hypershiftoperator maestro.agent acm
-%.deploy_pipeline:
+%.deploy_pipeline: $(ORAS)
 	$(eval export dirname=$(subst .,/,$(basename $@)))
-	./templatize.sh $(DEPLOY_ENV) -p ./$(dirname)/pipeline.yaml -P run -c $(CLOUD)
+	./templatize.sh $(DEPLOY_ENV) -p ./$(dirname)/pipeline.yaml -P run
 
-%.dry_run:
+%.dry_run: $(ORAS)
 	$(eval export dirname=$(subst .,/,$(basename $@)))
-	./templatize.sh $(DEPLOY_ENV) -p ./$(dirname)/pipeline.yaml -P run -c $(CLOUD) -d
+	./templatize.sh $(DEPLOY_ENV) -p ./$(dirname)/pipeline.yaml -P run -d
 
-svc.deployall: $(addsuffix .deploy_pipeline, $(services_svc_pipelines)) $(addsuffix .deploy, $(services_svc))
-mgmt.deployall: $(addsuffix .deploy, $(services_mgmt)) $(addsuffix .deploy_pipeline, $(services_mgmt_pipelines))
-deployall: svc.deployall mgmt.deployall
-
-acrpull.mgmt.deploy:
-	./templatize.sh $(DEPLOY_ENV) -p ./acrpull/pipeline.yaml -s deploy-mgmt -P run -c $(CLOUD)
-
-acrpull.mgmt.dry_run:
-	./templatize.sh $(DEPLOY_ENV) -p ./acrpull/pipeline.yaml -s deploy-mgmt -P run -c $(CLOUD) -d
+svc.deployall: $(ORAS) $(addsuffix .deploy_pipeline, $(services_svc_pipelines)) $(addsuffix .deploy, $(services_svc))
+mgmt.deployall: $(ORAS) $(addsuffix .deploy, $(services_mgmt)) $(addsuffix .deploy_pipeline, $(services_mgmt_pipelines))
+deployall: $(ORAS) svc.deployall mgmt.deployall
 
 listall:
 	@echo svc: ${services_svc}
@@ -207,5 +204,11 @@ list:
 
 validate-config-pipelines:
 	$(MAKE) -C tooling/templatize templatize
-	tooling/templatize/templatize pipeline validate --topology-config-file topology.yaml --service-config-file config/config.yaml --dev-mode --dev-region $(shell yq '.environments[] | select(.name == "dev") | .defaults.region' <tooling/templatize/settings.yaml)
-	tooling/templatize/templatize pipeline validate --topology-config-file topology.yaml --service-config-file config/config.msft.yaml
+	tooling/templatize/templatize pipeline validate --topology-config-file topology.yaml --service-config-file config/config.yaml --dev-mode --dev-region $(shell yq '.environments[] | select(.name == "dev") | .defaults.region' <tooling/templatize/settings.yaml) $(ONLY_CHANGED)
+	tooling/templatize/templatize pipeline validate --topology-config-file topology.yaml --service-config-file config/config.msft.yaml $(DEV_MODE) $(ONLY_CHANGED)
+
+validate-changed-config-pipelines:
+	$(MAKE) validate-config-pipelines DEV_MODE="--dev-mode --dev-region uksouth" ONLY_CHANGED="--only-changed"
+
+validate-config:
+	$(MAKE) -C config/ validate
