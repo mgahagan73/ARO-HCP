@@ -16,11 +16,17 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	azcorearm "github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
 	api "github.com/Azure/ARO-HCP/internal/api/v20240610preview/generated"
@@ -32,6 +38,33 @@ var (
 	subscriptionID string
 	e2eSetup       integration.SetupModel
 )
+
+// systemDataPolicy adds the X-Ms-Arm-Resource-System-Data header to cluster creation PUT requests.
+type systemDataPolicy struct{}
+
+// Do is called for each request. It adds the system data header to cluster creation requests.
+func (p *systemDataPolicy) Do(req *policy.Request) (*http.Response, error) {
+	// This policy should only apply to the PUT request that creates a cluster.
+	if req.Raw().Method == http.MethodPut && strings.Contains(req.Raw().URL.Path, "/hcpOpenShiftClusters/") {
+		// Create the SystemData object with the required values.
+		createdBy := "shadownman@example.com"
+		createdByType := api.CreatedByTypeUser
+		createdAt := time.Now()
+		systemData := &api.SystemData{
+			CreatedBy:     &createdBy,
+			CreatedByType: &createdByType,
+			CreatedAt:     &createdAt,
+		}
+
+		// Marshal the SystemData object to a JSON string.
+		systemDataBytes, err := json.Marshal(systemData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal systemData for header: %w", err)
+		}
+		req.Raw().Header.Set("X-Ms-Arm-Resource-System-Data", string(systemDataBytes))
+	}
+	return req.Next()
+}
 
 func prepareDevelopmentConf() azcore.ClientOptions {
 	c := cloud.Configuration{
@@ -67,6 +100,8 @@ func setup(ctx context.Context) error {
 	}
 
 	opts := prepareDevelopmentConf()
+	// Add the custom policy to the PerCallPolicies slice of the azcore.ClientOptions
+	opts.PerCallPolicies = []policy.Policy{&systemDataPolicy{}}
 
 	envOptions := &azidentity.EnvironmentCredentialOptions{
 		ClientOptions: opts,
@@ -90,3 +125,4 @@ func setup(ctx context.Context) error {
 
 	return nil
 }
+
