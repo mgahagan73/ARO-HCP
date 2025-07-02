@@ -42,11 +42,9 @@ var (
 // systemDataPolicy adds the X-Ms-Arm-Resource-System-Data header to cluster creation PUT requests.
 type systemDataPolicy struct{}
 
-// Do is called for each request. It adds the system data header to cluster creation requests.
 func (p *systemDataPolicy) Do(req *policy.Request) (*http.Response, error) {
 	// This policy should only apply to the PUT request that creates a cluster.
 	if req.Raw().Method == http.MethodPut && strings.Contains(req.Raw().URL.Path, "/hcpOpenShiftClusters/") {
-		// Create the SystemData object with the required values.
 		createdBy := "shadownman@example.com"
 		createdByType := api.CreatedByTypeUser
 		createdAt := time.Now()
@@ -55,14 +53,22 @@ func (p *systemDataPolicy) Do(req *policy.Request) (*http.Response, error) {
 			CreatedByType: &createdByType,
 			CreatedAt:     &createdAt,
 		}
-
-		// Marshal the SystemData object to a JSON string.
 		systemDataBytes, err := json.Marshal(systemData)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal systemData for header: %w", err)
 		}
 		req.Raw().Header.Set("X-Ms-Arm-Resource-System-Data", string(systemDataBytes))
 	}
+	return req.Next()
+}
+
+// identityURLPolicy adds the X-Ms-Identity-Url header to simulate ARM.
+type identityURLPolicy struct{}
+
+func (p *identityURLPolicy) Do(req *policy.Request) (*http.Response, error) {
+	// This header is needed for requests directly against the frontend.
+	// The value can be a dummy value for local development.
+	req.Raw().Header.Set("X-Ms-Identity-Url", "https://dummyhost.identity.azure.net")
 	return req.Next()
 }
 
@@ -100,8 +106,8 @@ func setup(ctx context.Context) error {
 	}
 
 	opts := prepareDevelopmentConf()
-	// Add the custom policy to the PerCallPolicies slice of the azcore.ClientOptions
-	opts.PerCallPolicies = []policy.Policy{&systemDataPolicy{}}
+	// Add the custom policies to the PerCallPolicies slice.
+	opts.PerCallPolicies = []policy.Policy{&systemDataPolicy{}, &identityURLPolicy{}}
 
 	envOptions := &azidentity.EnvironmentCredentialOptions{
 		ClientOptions: opts,
@@ -125,4 +131,3 @@ func setup(ctx context.Context) error {
 
 	return nil
 }
-

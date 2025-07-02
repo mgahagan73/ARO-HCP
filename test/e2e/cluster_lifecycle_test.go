@@ -83,20 +83,15 @@ var _ = Describe("HCPOpenShiftCluster Lifecycle", func() {
 		machineCidr := "10.0.0.0/16"
 		hostPrefix := int32(23)
 		//visibility := api.VisibilityPublic
-		visibility := "Public"
+		//visibility := "Public"
 		identityType := api.ManagedServiceIdentityTypeUserAssigned
 		// Define values for the SystemData field as required by the RP.
-		createdBy := "shadownman@example.com"
-		createdByType := api.CreatedByTypeUser
-		createdAt := time.Now()
+		//createdBy := "shadownman@example.com"
+		//createdByType := api.CreatedByTypeUser
+		//createdAt := time.Now()
 
 		clusterResource := api.HcpOpenShiftCluster{
 			Location: &location,
-			SystemData: &api.SystemData{
-				CreatedBy:     &createdBy,
-				CreatedByType: &createdByType,
-				CreatedAt:     &createdAt,
-			},
 			Properties: &api.HcpOpenShiftClusterProperties{
 				Platform: &api.PlatformProfile{
 					SubnetID:               &subnetID,
@@ -106,7 +101,7 @@ var _ = Describe("HCPOpenShiftCluster Lifecycle", func() {
 					},
 				},
 				API: &api.APIProfile{
-					Visibility: &visibility,
+					Visibility: func(v api.Visibility) *api.Visibility { return &v }("Public"),
 				},
 				Version: &api.VersionProfile{
 					ID:           &versionID,
