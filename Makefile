@@ -23,8 +23,9 @@ test-compile:
 	go list -f '{{.Dir}}/...' -m |xargs go test -c -o /dev/null
 .PHONY: test-compile
 
-mocks: install-tools
+mocks: $(MOCKGEN) $(GOIMPORTS)
 	MOCKGEN=${MOCKGEN} go generate ./internal/mocks
+	$(GOIMPORTS) -w -local github.com/Azure/ARO-HCP ./internal/mocks
 .PHONY: mocks
 
 install-tools: $(BINGO)
@@ -32,7 +33,7 @@ install-tools: $(BINGO)
 .PHONY: install-tools
 
 licenses: $(ADDLICENSE)
-	$(ADDLICENSE) -c 'Microsoft Corporation' -l apache $(shell find -type f -name '*.go')
+	$(ADDLICENSE) -c 'Microsoft Corporation' -l apache $(shell find . -type f -name '*.go')
 
 # There is currently no convenient way to run golangci-lint against a whole Go workspace
 # https://github.com/golang/go/issues/50745
@@ -182,7 +183,7 @@ services_all = $(join services_svc,services_mgmt)
 # This sections is used to reference pipeline runs and should replace
 # the usage of `svc-deploy.sh` script in the future.
 services_svc_pipelines = backend frontend cluster-service maestro.server observability.tracing
-services_mgmt_pipelines = hypershiftoperator maestro.agent acm
+services_mgmt_pipelines = secret-sync-controller acm hypershiftoperator maestro.agent
 %.deploy_pipeline: $(ORAS)
 	$(eval export dirname=$(subst .,/,$(basename $@)))
 	./templatize.sh $(DEPLOY_ENV) -p ./$(dirname)/pipeline.yaml -P run
@@ -202,10 +203,13 @@ listall:
 list:
 	@grep '^[^#[:space:]].*:' Makefile
 
+rebase:
+	hack/rebase-n-materialize.sh
+.PHONY: rebase
+
 validate-config-pipelines:
 	$(MAKE) -C tooling/templatize templatize
 	tooling/templatize/templatize pipeline validate --topology-config-file topology.yaml --service-config-file config/config.yaml --dev-mode --dev-region $(shell yq '.environments[] | select(.name == "dev") | .defaults.region' <tooling/templatize/settings.yaml) $(ONLY_CHANGED)
-	tooling/templatize/templatize pipeline validate --topology-config-file topology.yaml --service-config-file config/config.msft.yaml $(DEV_MODE) $(ONLY_CHANGED)
 
 validate-changed-config-pipelines:
 	$(MAKE) validate-config-pipelines DEV_MODE="--dev-mode --dev-region uksouth" ONLY_CHANGED="--only-changed"

@@ -1,3 +1,6 @@
+acm:
+  mce:
+    pauseReconciliation: true
 acr:
   ocp:
     name: arohcpocpdev
@@ -50,7 +53,7 @@ clustersService:
       roleNames: Azure Red Hat OpenShift KMS Plugin - Dev
   environment: arohcpdev
   image:
-    digest: sha256:3c603f59797f7602aa59f888a8830d414932c7d6590c8721e3cdde85a9d3cb31
+    digest: sha256:5176c82cd45bbd104dc5e60e059f6c57c940a7937b00ef041cd7ba1a5e114880
     registry: quay.io
     repository: app-sre/uhc-clusters-service
   k8s:
@@ -226,7 +229,7 @@ mgmt:
       minCount: 1
       osDiskSizeGB: 32
       vmSize: Standard_D2s_v3
-    kubernetesVersion: 1.31.8
+    kubernetesVersion: 1.32.4
     name: pers-usw3test-mgmt-1
     networkDataplane: azure
     networkPolicy: azure
@@ -249,7 +252,7 @@ mgmt:
   jaeger:
     deploy: false
   logs:
-    configVersion: ""
+    configVersion: "1"
     namespace: HCPCustomerLogs
     san: ""
   nsp:
@@ -258,15 +261,20 @@ mgmt:
   prometheus:
     namespace: prometheus
     namespaceLabel: network.openshift.io/policy-group=monitoring
+    prometheusConfigReloader:
+      image:
+        digest: sha256:b112cdc776c740261d812ab544261b781f9cb3520d7b400a353993d3be9c6df1
+        registry: mcr.microsoft.com/oss/v2
+        repository: prometheus/prometheus-config-reloader
     prometheusOperator:
       image:
-        digest: a5bf4407cb83dc93d4e29ef680e0a4d621256e0f004822f53b2ff1c592bf2a82
+        digest: sha256:a5bf4407cb83dc93d4e29ef680e0a4d621256e0f004822f53b2ff1c592bf2a82
         registry: mcr.microsoft.com/oss/v2
         repository: prometheus/prometheus-operator
       version: ""
     prometheusSpec:
       image:
-        digest: 2dcc22f4a8ea5c198e1c9eb6e7f04d127c55924da72e0f4334e659633185283c
+        digest: sha256:2dcc22f4a8ea5c198e1c9eb6e7f04d127c55924da72e0f4334e659633185283c
         registry: mcr.microsoft.com/oss/v2
         repository: prometheus/prometheus
       replicas: 2
@@ -297,12 +305,12 @@ monitoring:
   grafanaName: arohcp-dev
   grafanaRoles: 6b6d3adf-8476-4727-9812-20ffdef2b85c/Group/Admin
   grafanaZoneRedundantMode: Disabled
-  hcpWorkspaceName: arohcp-hcp-pers-usw3test
+  hcpWorkspaceName: hcps-usw3test
   sev1ActionGroupIDs: ""
   sev2ActionGroupIDs: ""
   sev3ActionGroupIDs: ""
   sev4ActionGroupIDs: ""
-  svcWorkspaceName: arohcp-pers-usw3test
+  svcWorkspaceName: services-usw3test
 msiKeyVault:
   name: ah-pers-mi-usw3test-1
   private: false
@@ -324,6 +332,12 @@ pko:
     repository: package-operator/remote-phase-manager
 region: westus3
 regionRG: hcp-underlay-pers-usw3test
+secretSyncController:
+  image:
+    digest: sha256:31535c9687ecf49a8654bdc6baeb0ae498cf1dcf04e73cf1f99c5376f777712a
+    registry: registry.k8s.io
+    repository: secrets-store-sync/controller
+  providerImage: mcr.microsoft.com/oss/v2/azure/secrets-store/provider-azure:v1.7.0
 serviceKeyVault:
   assignNSP: false
   name: aro-hcp-dev-svc-kv
@@ -343,7 +357,7 @@ svc:
       minCount: 1
       osDiskSizeGB: 32
       vmSize: Standard_D2s_v3
-    kubernetesVersion: 1.31.8
+    kubernetesVersion: 1.32.4
     name: pers-usw3test-svc
     networkDataplane: cilium
     networkPolicy: cilium
@@ -372,7 +386,7 @@ svc:
   jaeger:
     deploy: true
   logs:
-    configVersion: ""
+    configVersion: "1"
     namespace: HCPServiceLogs
     san: ""
   nsp:
@@ -381,15 +395,20 @@ svc:
   prometheus:
     namespace: prometheus
     namespaceLabel: ""
+    prometheusConfigReloader:
+      image:
+        digest: sha256:b112cdc776c740261d812ab544261b781f9cb3520d7b400a353993d3be9c6df1
+        registry: mcr.microsoft.com/oss/v2
+        repository: prometheus/prometheus-config-reloader
     prometheusOperator:
       image:
-        digest: a5bf4407cb83dc93d4e29ef680e0a4d621256e0f004822f53b2ff1c592bf2a82
+        digest: sha256:a5bf4407cb83dc93d4e29ef680e0a4d621256e0f004822f53b2ff1c592bf2a82
         registry: mcr.microsoft.com/oss/v2
         repository: prometheus/prometheus-operator
       version: ""
     prometheusSpec:
       image:
-        digest: 2dcc22f4a8ea5c198e1c9eb6e7f04d127c55924da72e0f4334e659633185283c
+        digest: sha256:2dcc22f4a8ea5c198e1c9eb6e7f04d127c55924da72e0f4334e659633185283c
         registry: mcr.microsoft.com/oss/v2
         repository: prometheus/prometheus
       replicas: 2

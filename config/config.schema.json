@@ -152,6 +152,7 @@
         },
         "configVersion": {
           "description": "Geneva logs account namespace configuration version",
+          "pattern": "^[0-9]+$",
           "type": "string"
         }
       },
@@ -256,7 +257,8 @@
           "type": "string"
         },
         "digest": {
-          "type": "string"
+            "type": "string",
+            "pattern": "^$|^sha256:[a-fA-F0-9]{64}$"
         }
       },
       "required": [
@@ -303,7 +305,7 @@
             },
             "version": {
               "type": "string"
-            }
+            }          
           }
         },
         "prometheusSpec": {
@@ -321,6 +323,15 @@
             },
             "shards": {
               "type": "number"
+            }
+          }
+        },
+        "prometheusConfigReloader": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "image" :{
+              "$ref": "#/definitions/containerImage"
             }
           }
         }
@@ -375,6 +386,28 @@
         "cxParentZoneName",
         "svcParentZoneName",
         "regionalSubdomain"
+      ]
+    },
+    "acm": {
+      "type": "object",
+      "properties": {
+        "mce": {
+          "type": "object",
+          "properties": {
+            "pauseReconciliation": {
+              "type": "boolean",
+              "description": "Pause reconciliation of ACM MCE resources like CRDs and deployments."
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "pauseReconciliation"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "mce"
       ]
     },
     "pko": {
@@ -998,6 +1031,22 @@
         "image"
       ]
     },
+    "secretSyncController": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "$ref": "#/definitions/containerImage"
+        },
+        "providerImage": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "image",
+        "providerImage"
+      ]
+    },
     "maestro": {
       "type": "object",
       "properties": {
@@ -1505,6 +1554,7 @@
     "hypershift",
     "imageSync",
     "acrPull",
+    "secretSyncController",
     "maestro",
     "mgmt",
     "mgmtKeyVault",

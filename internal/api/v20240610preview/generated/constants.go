@@ -127,6 +127,25 @@ func PossibleNetworkTypeValues() []NetworkType {
 	}
 }
 
+// OperatorIdentityRequired - Indicates if the identity is required
+type OperatorIdentityRequired string
+
+const (
+	// OperatorIdentityRequiredAlways - Indicates the identity is always required.
+	OperatorIdentityRequiredAlways OperatorIdentityRequired = "Always"
+	// OperatorIdentityRequiredOnEnablement - Indicates the identity is only required when a functionality that leverages the
+	// operator is enabled.
+	OperatorIdentityRequiredOnEnablement OperatorIdentityRequired = "OnEnablement"
+)
+
+// PossibleOperatorIdentityRequiredValues returns the possible values for the OperatorIdentityRequired const type.
+func PossibleOperatorIdentityRequiredValues() []OperatorIdentityRequired {
+	return []OperatorIdentityRequired{
+		OperatorIdentityRequiredAlways,
+		OperatorIdentityRequiredOnEnablement,
+	}
+}
+
 // OptionalClusterCapability - Cluster capabilities that can be disabled.
 type OptionalClusterCapability string
 
@@ -166,7 +185,7 @@ type OutboundType string
 
 const (
 	// OutboundTypeLoadBalancer - The load balancer configuration
-	OutboundTypeLoadBalancer OutboundType = "loadBalancer"
+	OutboundTypeLoadBalancer OutboundType = "LoadBalancer"
 )
 
 // PossibleOutboundTypeValues returns the possible values for the OutboundType const type.
@@ -214,9 +233,9 @@ type Visibility string
 
 const (
 	// VisibilityPrivate - The API server is not visible from the internet.
-	VisibilityPrivate Visibility = "private"
+	VisibilityPrivate Visibility = "Private"
 	// VisibilityPublic - The API server is visible from the internet.
-	VisibilityPublic Visibility = "public"
+	VisibilityPublic Visibility = "Public"
 )
 
 // PossibleVisibilityValues returns the possible values for the Visibility const type.

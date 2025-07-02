@@ -53,6 +53,32 @@ type HcpOpenShiftClustersClientUpdateResponse struct {
 	HcpOpenShiftCluster
 }
 
+// HcpOpenShiftVersionsClientGetResponse contains the response from method HcpOpenShiftVersionsClient.Get.
+type HcpOpenShiftVersionsClientGetResponse struct {
+	// HcpOpenShiftVersion represents a location based available HCP OpenShift version
+	HcpOpenShiftVersion
+}
+
+// HcpOpenShiftVersionsClientListResponse contains the response from method HcpOpenShiftVersionsClient.NewListPager.
+type HcpOpenShiftVersionsClientListResponse struct {
+	// The response of a HcpOpenShiftVersion list operation.
+	HcpOpenShiftVersionListResult
+}
+
+// HcpOperatorIdentityRoleSetsClientGetResponse contains the response from method HcpOperatorIdentityRoleSetsClient.Get.
+type HcpOperatorIdentityRoleSetsClientGetResponse struct {
+	// HcpOperatorIdentityRoles represents a location based representation of
+	// the required platform workload identities and their required roles for a given
+	// OpenShift version
+	HcpOperatorIdentityRoleSet
+}
+
+// HcpOperatorIdentityRoleSetsClientListResponse contains the response from method HcpOperatorIdentityRoleSetsClient.NewListPager.
+type HcpOperatorIdentityRoleSetsClientListResponse struct {
+	// The response of a HcpOperatorIdentityRoleSet list operation.
+	HcpOperatorIdentityRoleSetListResult
+}
+
 // NodePoolsClientCreateOrUpdateResponse contains the response from method NodePoolsClient.BeginCreateOrUpdate.
 type NodePoolsClientCreateOrUpdateResponse struct {
 	// Concrete tracked resource types can be created by aliasing this type using a specific property type.
