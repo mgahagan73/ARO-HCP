@@ -16,9 +16,9 @@ package e2e
 
 import (
 	"context"
-	"errors"
+	//"errors"
 	"fmt"
-	"net/http"
+	//"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -168,8 +168,13 @@ var _ = Describe("HCPOpenShiftCluster Lifecycle", func() {
 		Expect(err).NotTo(HaveOccurred(), "failed to poll for cluster deletion")
 
 		By("Verifying the cluster is not found after deletion")
+
+		_, err = clustersClient.Get(ctx, customerEnv.CustomerRGName, clusterName, nil)
+		Expect(err).ToNot(BeNil())
+		errMessage := fmt.Sprintf("The resource 'hcpOpenShiftClusters/%s' under resource group '%s' was not found.", clusterName, customerEnv.CustomerRGName)
+		Expect(err.Error()).To(ContainSubstring(errMessage))
 		// After a successful deletion, a GET request should return a 404 Not Found error.
-		Eventually(func(g Gomega) {
+		/* Eventually(func(g Gomega) {
 			_, err := clustersClient.Get(ctx, customerEnv.CustomerRGName, clusterName, nil)
 			g.Expect(err).To(HaveOccurred())
 
@@ -182,6 +187,6 @@ var _ = Describe("HCPOpenShiftCluster Lifecycle", func() {
 			g.Expect(errors.As(err, &scg)).To(BeTrue(), "error does not contain a status code")
 			g.Expect(scg.StatusCode()).To(Equal(http.StatusNotFound), "expected a 404 Not Found error after deletion")
 
-		}).WithTimeout(5 * time.Minute).WithPolling(15 * time.Second).Should(Succeed())
+		}).WithTimeout(30 * time.Minute).WithPolling(60 * time.Second).Should(Succeed()) */
 	})
 })
